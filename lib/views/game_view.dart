@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../app_config.dart';
 import '../game/game_session_controller.dart';
 import '../game/sample_game.dart';
+import '../logic/models/combination.dart';
 import '../logic/models/tile.dart';
 import '../resources/asset_paths.dart';
 import '../resources/sound_manager.dart';
@@ -135,6 +138,18 @@ class _GameViewState extends State<GameView> {
                                   });
                                 },
                               ),
+                            ),
+                          ),
+                        if (_controller.isInteractionLocked &&
+                            !_showRunInfo &&
+                            !_controller.isShopOpen &&
+                            !_controller.isRunCompleted &&
+                            !_controller.isGameOver &&
+                            !_isPaused)
+                          const Positioned.fill(
+                            child: AbsorbPointer(
+                              absorbing: true,
+                              child: ColoredBox(color: Color(0x01000000)),
                             ),
                           ),
                       ],
@@ -276,17 +291,14 @@ class _CompactTopStrip extends StatelessWidget {
       children: [
         Expanded(
           flex: 5,
-          child: _RailPanel(
-            color: const Color(0xFF1E2626),
-            child: _BlindHeaderCard(
-              blindLabel: switch (((stage.stageIndex - 1) % 3) + 1) {
-                1 => 'Small Blind',
-                2 => 'Big Blind',
-                _ => 'Boss Blind',
-              },
-              targetScore: stage.targetScore,
-              rewardLabel: _blindRewardLabel(stage.stageIndex),
-            ),
+          child: _BlindHeaderCard(
+            blindLabel: switch (((stage.stageIndex - 1) % 3) + 1) {
+              1 => 'Small Blind',
+              2 => 'Big Blind',
+              _ => 'Boss Blind',
+            },
+            targetScore: stage.targetScore,
+            rewardLabel: _blindRewardLabel(stage.stageIndex),
           ),
         ),
         const SizedBox(width: 8),
@@ -368,15 +380,11 @@ class _BlindHeaderCard extends StatelessWidget {
         final compact =
             constraints.maxWidth < 120 || constraints.maxHeight < 130;
         final tiny = constraints.maxWidth < 80 || constraints.maxHeight < 90;
-        final outerRadius = tiny ? 14.0 : 18.0;
-        final outerPadding = tiny
-            ? const EdgeInsets.fromLTRB(6, 6, 6, 5)
-            : const EdgeInsets.fromLTRB(10, 10, 10, 8);
-        final titleFont = tiny ? 10.0 : (compact ? 13.0 : 17.0);
-        final labelFont = tiny ? 7.0 : (compact ? 8.0 : 10.0);
-        final valueFont = tiny ? 16.0 : (compact ? 20.0 : 30.0);
-        final rewardFont = tiny ? 11.0 : (compact ? 13.0 : 18.0);
-        final badgeSize = tiny ? 46.0 : (compact ? 58.0 : 74.0);
+        final titleFont = tiny ? 9.0 : (compact ? 12.0 : 16.0);
+        final labelFont = tiny ? 8.0 : (compact ? 9.0 : 11.0);
+        final valueFont = tiny ? 18.0 : (compact ? 22.0 : 30.0);
+        final rewardFont = tiny ? 14.0 : (compact ? 17.0 : 22.0);
+        final badgeSize = tiny ? 38.0 : (compact ? 48.0 : 60.0);
         final shortBlind = switch (blindLabel) {
           'Small Blind' => 'SMALL\nBLIND',
           'Big Blind' => 'BIG\nBLIND',
@@ -388,153 +396,144 @@ class _BlindHeaderCard extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                padding: outerPadding,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1F24),
-                  borderRadius: BorderRadius.circular(outerRadius),
+                  color: const Color(0xFF1E2626),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0x66C39A39), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: Center(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          blindLabel,
-                          style: TextStyle(
-                            fontFamily: AssetPaths.fontAngduIpsul140,
-                            color: Colors.white,
-                            fontSize: titleFont,
-                            fontWeight: FontWeight.w900,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: compact ? 128 : 164,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            blindLabel,
+                            style: TextStyle(
+                              fontFamily: AssetPaths.fontAngduIpsul140,
+                              color: Colors.white,
+                              fontSize: titleFont,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ),
-                      SizedBox(height: tiny ? 4 : 8),
-                      Expanded(
-                        child: Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: SizedBox(
-                              width: compact ? 150 : 210,
-                              height: compact ? 74 : 92,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: badgeSize,
-                                    height: badgeSize,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: blindLabel == 'Small Blind'
-                                          ? const Color(0xFF4258D6)
-                                          : blindLabel == 'Big Blind'
-                                          ? const Color(0xFFC78B18)
-                                          : const Color(0xFF7E2F9A),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.18,
-                                          ),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        shortBlind,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: tiny ? 8 : 10,
-                                          fontWeight: FontWeight.w900,
-                                          height: 0.95,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: tiny ? 6 : 10),
-                                  Expanded(
-                                    child: Container(
-                                      height: double.infinity,
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: tiny ? 6 : 10,
-                                        vertical: tiny ? 3 : 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.24,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          tiny ? 10 : 14,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Score at least',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: labelFont,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment: Alignment.centerLeft,
-                                            child: Text(
-                                              _compactNumber(targetScore),
-                                              style: TextStyle(
-                                                color: const Color(0xFFFF7860),
-                                                fontSize: valueFont,
-                                                fontWeight: FontWeight.w900,
-                                                height: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment: Alignment.centerLeft,
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  'Reward ',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: labelFont,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  rewardLabel,
-                                                  style: TextStyle(
-                                                    color: const Color(
-                                                      0xFFF3C55B,
-                                                    ),
-                                                    fontSize: rewardFont,
-                                                    fontWeight: FontWeight.w900,
-                                                    height: 1,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                          SizedBox(height: tiny ? 4 : 8),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              width: badgeSize,
+                              height: badgeSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: blindLabel == 'Small Blind'
+                                    ? const Color(0xFF4258D6)
+                                    : blindLabel == 'Big Blind'
+                                    ? const Color(0xFFC78B18)
+                                    : const Color(0xFF7E2F9A),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
+                              child: Center(
+                                child: Text(
+                                  shortBlind,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: tiny ? 8 : 10,
+                                    fontWeight: FontWeight.w900,
+                                    height: 0.95,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          SizedBox(height: tiny ? 4 : 8),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Score at least',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: labelFont,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: tiny ? 2 : 4),
+                          Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              _compactNumber(targetScore),
+                              style: TextStyle(
+                                color: const Color(0xFFFF7860),
+                                fontSize: valueFont,
+                                fontWeight: FontWeight.w900,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: tiny ? 4 : 6),
+                          Align(
+                            alignment: Alignment.center,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.24),
+                                borderRadius: BorderRadius.circular(
+                                  tiny ? 10 : 14,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: tiny ? 9 : 12,
+                                  vertical: tiny ? 5 : 6,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Reward ',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: labelFont,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      Text(
+                                        rewardLabel,
+                                        style: TextStyle(
+                                          color: const Color(0xFFF3C55B),
+                                          fontSize: rewardFont,
+                                          fontWeight: FontWeight.w900,
+                                          height: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -875,59 +874,66 @@ class _CompactMetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF10161C),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x44FFFFFF)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _CompactMetaCell(
-              label: 'Ante',
-              value: '$ante/8',
-              valueColor: const Color(0xFFF0A941),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 320;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF10161C),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0x44FFFFFF)),
           ),
-          const _MetaDivider(),
-          Expanded(
-            child: _CompactMetaCell(
-              label: 'Round',
-              value: '$round',
-              valueColor: const Color(0xFFF0A941),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _CompactMetaCell(
+                  label: 'Ante',
+                  value: '$ante/8',
+                  valueColor: const Color(0xFFF0A941),
+                ),
+              ),
+              _MetaDivider(compact: compact),
+              Expanded(
+                child: _CompactMetaCell(
+                  label: compact ? 'Rnd' : 'Round',
+                  value: '$round',
+                  valueColor: const Color(0xFFF0A941),
+                ),
+              ),
+              _MetaDivider(compact: compact),
+              Expanded(
+                child: _CompactMetaCell(
+                  label: compact ? 'Hand' : 'Hands',
+                  value: '$hands',
+                  valueColor: const Color(0xFF39A1FF),
+                ),
+              ),
+              _MetaDivider(compact: compact),
+              Expanded(
+                child: _CompactMetaCell(
+                  label: compact ? 'Disc' : 'Discards',
+                  value: '$discards',
+                  valueColor: const Color(0xFFFF7750),
+                ),
+              ),
+            ],
           ),
-          const _MetaDivider(),
-          Expanded(
-            child: _CompactMetaCell(
-              label: 'Hands',
-              value: '$hands',
-              valueColor: const Color(0xFF39A1FF),
-            ),
-          ),
-          const _MetaDivider(),
-          Expanded(
-            child: _CompactMetaCell(
-              label: 'Discards',
-              value: '$discards',
-              valueColor: const Color(0xFFFF7750),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _MetaDivider extends StatelessWidget {
-  const _MetaDivider();
+  const _MetaDivider({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: EdgeInsets.symmetric(vertical: compact ? 6 : 8),
       color: Colors.white.withValues(alpha: 0.12),
     );
   }
@@ -1121,7 +1127,7 @@ class _BattleCenterPanel extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxHeight < 310;
-        final reserveBottom = compact ? 84.0 : 102.0;
+        final reserveBottom = compact ? 72.0 : 92.0;
         return DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0x552C7A66),
@@ -1129,7 +1135,12 @@ class _BattleCenterPanel extends StatelessWidget {
             border: Border.all(color: const Color(0x55D8C27A), width: 2),
           ),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(18, 16, 18, compact ? 12 : 16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              compact ? 12 : 16,
+              16,
+              compact ? 10 : 14,
+            ),
             child: Column(
               children: [
                 Row(
@@ -1150,7 +1161,7 @@ class _BattleCenterPanel extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: compact ? 8 : 14),
                 Expanded(
                   child: Stack(
                     children: [
@@ -1272,16 +1283,106 @@ class _BottomBattleBar extends StatelessWidget {
   }
 }
 
-class _FanHandZone extends StatelessWidget {
+class _FanHandZone extends StatefulWidget {
   const _FanHandZone({required this.controller});
 
   final GameSessionController controller;
 
   @override
+  State<_FanHandZone> createState() => _FanHandZoneState();
+}
+
+class _FanHandZoneState extends State<_FanHandZone> {
+  static const double _deckLaneWidth = 72;
+  static const Duration _drawFlightDuration = Duration(milliseconds: 360);
+
+  final List<_DrawFlight> _flights = <_DrawFlight>[];
+  int _nextFlightId = 0;
+  int? _previousDrawPileCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _previousDrawPileCount = widget.controller.drawPileCount;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final initialHandCount = widget.controller.run.player.hand.length;
+      if (initialHandCount > 0) {
+        _spawnDrawFlights(
+          drawnCount: initialHandCount,
+          handCount: initialHandCount,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.controller.setInteractionLocked(false);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FanHandZone oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentDrawPileCount = widget.controller.drawPileCount;
+    final previousDrawPileCount = _previousDrawPileCount;
+    if (previousDrawPileCount != null && currentDrawPileCount < previousDrawPileCount) {
+      _spawnDrawFlights(
+        drawnCount: previousDrawPileCount - currentDrawPileCount,
+        handCount: widget.controller.run.player.hand.length,
+      );
+    }
+    _previousDrawPileCount = currentDrawPileCount;
+  }
+
+  void _spawnDrawFlights({
+    required int drawnCount,
+    required int handCount,
+  }) {
+    if (drawnCount <= 0 || handCount <= 0) {
+      return;
+    }
+
+    widget.controller.setInteractionLocked(true);
+    final startIndex = (handCount - drawnCount).clamp(0, handCount);
+    for (var offset = 0; offset < drawnCount; offset++) {
+      final slotIndex = (startIndex + offset).clamp(0, handCount - 1);
+      final flight = _DrawFlight(
+        id: _nextFlightId++,
+        targetSlot: slotIndex,
+        totalHandCount: handCount,
+        delay: Duration(milliseconds: offset * 55),
+      );
+      setState(() {
+        _flights.add(flight);
+      });
+      unawaited(
+        Future<void>.delayed(
+          flight.delay + _drawFlightDuration + const Duration(milliseconds: 120),
+          () {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _flights.removeWhere((entry) => entry.id == flight.id);
+            });
+            if (_flights.isEmpty) {
+              widget.controller.setInteractionLocked(false);
+            }
+          },
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hand = controller.run.player.hand;
-    final selected = controller.selectedIndices.toSet();
-    final selectionFull = controller.isSelectionFull;
+    final hand = widget.controller.run.player.hand;
+    final selected = widget.controller.selectedIndices.toSet();
+    final selectionFull = widget.controller.isSelectionFull;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1295,6 +1396,10 @@ class _FanHandZone extends StatelessWidget {
             return const SizedBox.shrink();
           }
 
+          final handWidth = (constraints.maxWidth - _deckLaneWidth).clamp(
+            0.0,
+            constraints.maxWidth,
+          );
           final rows = count > 8 ? 2 : 1;
           final rowOneCount = rows == 1 ? count : count.clamp(0, 8);
           final rowTwoCount = rows == 1 ? 0 : count - rowOneCount;
@@ -1316,22 +1421,45 @@ class _FanHandZone extends StatelessWidget {
                   tiles: hand.take(rowOneCount).toList(),
                   selectedIndices: selected,
                   selectionFull: selectionFull,
-                  controller: controller,
+                  controller: widget.controller,
                   cardWidth: cardWidth,
                   top: rows == 1 ? 14 : 6,
                   indexOffset: 0,
-                  availableWidth: constraints.maxWidth,
+                  availableWidth: handWidth,
                 ),
               if (rowTwoCount > 0)
                 _HandRow(
                   tiles: hand.skip(rowOneCount).take(rowTwoCount).toList(),
                   selectedIndices: selected,
                   selectionFull: selectionFull,
-                  controller: controller,
+                  controller: widget.controller,
                   cardWidth: cardWidth,
                   top: tileHeight + 18,
                   indexOffset: rowOneCount,
-                  availableWidth: constraints.maxWidth,
+                  availableWidth: handWidth,
+                ),
+              Positioned(
+                right: 8,
+                top: rows == 1 ? 12 : 18,
+                bottom: 24,
+                width: _deckLaneWidth - 12,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: _DeckStackBadge(
+                    drawPileCount: widget.controller.drawPileCount,
+                    totalDeckSize: widget.controller.totalDeckSize,
+                    discardPileCount: widget.controller.discardPileCount,
+                  ),
+                ),
+              ),
+              for (final flight in _flights)
+                _DrawFlightCard(
+                  key: ValueKey<int>(flight.id),
+                  flight: flight,
+                  zoneSize: constraints.biggest,
+                  handWidth: handWidth,
+                  deckLaneWidth: _deckLaneWidth,
+                  duration: _drawFlightDuration,
                 ),
               Positioned(
                 left: 0,
@@ -1352,6 +1480,223 @@ class _FanHandZone extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+class _DrawFlight {
+  const _DrawFlight({
+    required this.id,
+    required this.targetSlot,
+    required this.totalHandCount,
+    required this.delay,
+  });
+
+  final int id;
+  final int targetSlot;
+  final int totalHandCount;
+  final Duration delay;
+}
+
+class _DeckStackBadge extends StatelessWidget {
+  const _DeckStackBadge({
+    required this.drawPileCount,
+    required this.totalDeckSize,
+    required this.discardPileCount,
+  });
+
+  final int drawPileCount;
+  final int totalDeckSize;
+  final int discardPileCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 48,
+          height: 72,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 6,
+                top: 4,
+                child: _DeckBackCard(
+                  width: 40,
+                  tint: const Color(0x55FFFFFF),
+                ),
+              ),
+              Positioned(
+                left: 3,
+                top: 2,
+                child: _DeckBackCard(
+                  width: 40,
+                  tint: const Color(0x77FFFFFF),
+                ),
+              ),
+              const Positioned(
+                left: 0,
+                top: 0,
+                child: _DeckBackCard(width: 40),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$drawPileCount/$totalDeckSize',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'D $discardPileCount',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.72),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeckBackCard extends StatelessWidget {
+  const _DeckBackCard({required this.width, this.tint = Colors.white});
+
+  final double width;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = width * 1.38;
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF58B3FF).withValues(alpha: tint.a),
+            const Color(0xFF1E79DA).withValues(alpha: tint.a),
+          ],
+        ),
+        border: Border.all(color: const Color(0xFFF2F5FB), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: width * 0.5,
+          height: width * 0.5,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawFlightCard extends StatelessWidget {
+  const _DrawFlightCard({
+    super.key,
+    required this.flight,
+    required this.zoneSize,
+    required this.handWidth,
+    required this.deckLaneWidth,
+    required this.duration,
+  });
+
+  final _DrawFlight flight;
+  final Size zoneSize;
+  final double handWidth;
+  final double deckLaneWidth;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = _targetOffset();
+    final begin = Offset(
+      zoneSize.width - (deckLaneWidth * 0.7),
+      zoneSize.height * 0.52,
+    );
+    final totalDuration = flight.delay + duration;
+
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: totalDuration,
+        curve: Curves.easeOutCubic,
+        onEnd: null,
+        builder: (context, value, child) {
+          final delayedValue =
+              ((value * totalDuration.inMilliseconds) - flight.delay.inMilliseconds) /
+                  duration.inMilliseconds;
+          final normalized = delayedValue.clamp(0.0, 1.0);
+          final progress = Curves.easeOutCubic.transform(normalized);
+          final current = Offset.lerp(begin, target, progress)!;
+          final liftArc = (1 - (progress - 0.5).abs() * 2) * 16;
+          return Positioned(
+            left: current.dx,
+            top: current.dy - liftArc,
+            child: Opacity(
+              opacity: (1 - (progress * 0.08)).clamp(0.0, 1.0),
+              child: Transform.rotate(
+                angle: (1 - progress) * -0.18,
+                child: const _DeckBackCard(width: 34),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Offset _targetOffset() {
+    final totalCount = flight.totalHandCount;
+    final rows = totalCount > 8 ? 2 : 1;
+    final rowOneCount = rows == 1 ? totalCount : totalCount.clamp(0, 8);
+    final rowTwoCount = rows == 1 ? 0 : totalCount - rowOneCount;
+    final availableHeight = zoneSize.height - 28;
+    final rowHeight = rows == 1 ? availableHeight : (availableHeight - 18) / 2;
+    final tileHeight = rowHeight.clamp(56.0, rows == 1 ? 92.0 : 74.0);
+    final cardWidth = (tileHeight * 0.52).clamp(
+      34.0,
+      rows == 1 ? 52.0 : 42.0,
+    );
+    final isSecondRow = flight.targetSlot >= rowOneCount;
+    final rowCount = isSecondRow ? rowTwoCount : rowOneCount;
+    final localIndex = isSecondRow ? flight.targetSlot - rowOneCount : flight.targetSlot;
+    final top = isSecondRow ? tileHeight + 28 : (rows == 1 ? 24.0 : 16.0);
+
+    final totalNaturalWidth = cardWidth * rowCount;
+    final overlap = rowCount == 1
+        ? 0.0
+        : ((totalNaturalWidth - handWidth + 28) / (rowCount - 1)).clamp(
+            0.0,
+            cardWidth * 0.62,
+          );
+    final step = cardWidth - overlap;
+    final usedWidth = step * (rowCount - 1) + cardWidth;
+    final startX = (handWidth - usedWidth) / 2;
+
+    return Offset(startX + (step * localIndex), top + 10);
   }
 }
 
@@ -2035,15 +2380,14 @@ class _RunInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stage = controller.run.stage;
-    final logs = controller.logs.take(6).toList();
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 360),
+      constraints: BoxConstraints(maxWidth: 420, maxHeight: maxHeight),
       child: _GlassPanel(
         color: const Color(0xF010233A),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
@@ -2064,51 +2408,242 @@ class _RunInfoPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                _SummaryChip(label: 'Seed', value: controller.run.seedText),
-                _SummaryChip(
-                  label: 'Stage',
-                  value: '${stage?.stageIndex ?? '-'}',
-                ),
-                _SummaryChip(
-                  label: 'Target',
-                  value: '${stage?.targetScore ?? 0}',
-                ),
-                _SummaryChip(
-                  label: 'Score',
-                  value: '${stage?.currentScore ?? 0}',
-                ),
-                _SummaryChip(
-                  label: 'Gold',
-                  value: '${controller.run.player.gold}',
-                ),
+                Expanded(child: _GuideTab(label: '포커 핸드', selected: true)),
+                const SizedBox(width: 8),
+                Expanded(child: _GuideTab(label: '블라인드', selected: false)),
+                const SizedBox(width: 8),
+                Expanded(child: _GuideTab(label: '바우처', selected: false)),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Recent Log',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            if (logs.isEmpty)
-              const Text('로그가 없습니다.', style: TextStyle(color: Colors.white54))
-            else
-              ...logs.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    'S${entry.stageIndex}  ${entry.message}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(right: 2),
+                child: Column(
+                  children: _handGuideRows()
+                      .map(
+                        (row) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _HandGuideRow(
+                            level: row.level,
+                            name: row.name,
+                            chips: row.chips,
+                            mult: row.mult,
+                            count: row.count,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onClose,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF0A618),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  '뒤로',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_HandGuideEntry> _handGuideRows() {
+    final player = controller.run.player;
+
+    _HandGuideEntry buildRow(
+      CombinationType type,
+      String name,
+      int chips,
+      int mult,
+    ) {
+      return _HandGuideEntry(
+        level: player.combinationLevelFor(type),
+        name: name,
+        chips: chips,
+        mult: mult,
+        count: player.combinationCountFor(type),
+      );
+    }
+
+    return [
+      buildRow(CombinationType.longStraight, 'Long Straight', 100, 1),
+      buildRow(
+        CombinationType.crownStraightFlush,
+        'Crown Straight Flush',
+        95,
+        1,
+      ),
+      buildRow(CombinationType.straightFlush, 'Straight Flush', 75, 1),
+      buildRow(CombinationType.quad, 'Quad', 60, 1),
+      buildRow(CombinationType.colorStraight, 'Color Straight', 55, 1),
+      buildRow(CombinationType.fullHouse, 'Full House', 50, 1),
+      buildRow(CombinationType.crownStraight, 'Crown Straight', 45, 1),
+      buildRow(CombinationType.flush, 'Flush', 40, 1),
+      buildRow(CombinationType.straight, 'Straight', 35, 1),
+      buildRow(CombinationType.triple, 'Triple', 30, 1),
+      buildRow(CombinationType.twoPair, 'Two Pair', 20, 1),
+      buildRow(CombinationType.pair, 'Pair', 10, 1),
+      buildRow(CombinationType.highTile, 'High Tile', 5, 1),
+    ];
+  }
+}
+
+class _HandGuideEntry {
+  const _HandGuideEntry({
+    required this.level,
+    required this.name,
+    required this.chips,
+    required this.mult,
+    required this.count,
+  });
+
+  final int level;
+  final String name;
+  final int chips;
+  final int mult;
+  final int count;
+}
+
+class _GuideTab extends StatelessWidget {
+  const _GuideTab({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFE4554C) : const Color(0xFF3C434A),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.white70,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HandGuideRow extends StatelessWidget {
+  const _HandGuideRow({
+    required this.level,
+    required this.name,
+    required this.chips,
+    required this.mult,
+    required this.count,
+  });
+
+  final int level;
+  final String name;
+  final int chips;
+  final int mult;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8EEF8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Lv.$level',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF2C3340),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2196F3), Color(0xFFFF5B4F)],
+                ),
+              ),
+              child: Text(
+                '$chips x $mult',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 36,
+              child: Text(
+                '#$count',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Color(0xFFF0A21F),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
           ],
         ),
       ),

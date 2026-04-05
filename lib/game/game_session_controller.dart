@@ -32,10 +32,12 @@ class GameSessionController extends ChangeNotifier {
   final List<RunLogEntry> _logs = <RunLogEntry>[];
   HandSortMode _handSortMode = HandSortMode.rank;
   String? _statusMessage;
+  bool _isInteractionLocked = false;
 
   RunContext get run => _run;
   List<int> get selectedIndices => _selectedIndices.toList()..sort();
   String? get statusMessage => _statusMessage;
+  bool get isInteractionLocked => _isInteractionLocked;
 
   List<Anomaly> get anomalies => _run.player.anomalies;
   bool get isShopOpen => _run.phase == RunPhase.shop;
@@ -198,6 +200,14 @@ class GameSessionController extends ChangeNotifier {
     _startNewRun(seedText);
     _statusMessage = '새 런을 시작했습니다.';
     _appendLog(_statusMessage!);
+    notifyListeners();
+  }
+
+  void setInteractionLocked(bool locked) {
+    if (_isInteractionLocked == locked) {
+      return;
+    }
+    _isInteractionLocked = locked;
     notifyListeners();
   }
 

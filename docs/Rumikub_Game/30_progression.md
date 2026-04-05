@@ -14,14 +14,14 @@
 
 | 원본 용어       | 프로젝트 표시         |
 | ----------- | --------------- |
-| Ante        | Stage Tier      |
-| Blind       | Round Target    |
-| Small Blind | Easy Round      |
-| Big Blind   | Mid Round       |
-| Boss Blind  | Boss Round      |
+| Ante        | Ante            |
+| Blind       | Blind           |
+| Small Blind | Small Blind     |
+| Big Blind   | Big Blind       |
+| Boss Blind  | Boss Blind      |
 | Stake       | Difficulty Tier |
 
-> 내부 로직/데이터 키는 Ante/Blind/Stake 유지 권장
+> 내부 로직/데이터 키는 Ante/Blind/Stake 유지. UI에서도 가능하면 동일 용어를 우선 사용한다.
 
 ---
 
@@ -34,6 +34,7 @@
 3. Boss Blind (Boss)
 
 플레이어는 이 3단계를 순서대로 통과해야 다음 Ante로 진행한다.
+Small / Big는 스킵 가능하고 Boss는 스킵 불가다.
 
 ---
 
@@ -51,8 +52,8 @@
 
 | Blind       | 배율               |
 | ----------- | ---------------- |
-| Small Blind | 1.0 × Base       |
-| Big Blind   | 1.5 × Base       |
+| Small Blind | 1.0 × Base |
+| Big Blind   | 1.5 × Base |
 | Boss Blind  | 일반적으로 2.0 × Base |
 
 > 일부 Boss는 예외 배율 사용 (예: 4×, 1× 등)
@@ -66,6 +67,8 @@
 | Small | \$3 |
 | Big   | \$4 |
 | Boss  | \$5 |
+
+> 현재 코드의 `10 + (남은 Hands × 5)` 일괄 보상은 Balatro 원형과 다른 임시 구현이다.
 
 ---
 
@@ -187,6 +190,7 @@ Boss Blind는 단순히 점수가 높은 라운드가 아니라, **플레이 스
 - 동일 Stake
 - 동일 Deck
 - 동일 입력 순서
+- 동일 스킵/상점 선택
 
 ---
 
@@ -212,11 +216,19 @@ Boss Blind는 단순히 점수가 높은 라운드가 아니라, **플레이 스
 ```text
 Ante 시작
 → Small Blind
+→ 상점
 → Big Blind
+→ 상점
 → Boss Blind
 → 상점
 → 다음 Ante
 ```
+
+## 9.1 현재 코드와의 불일치
+
+- 현재 코드는 stage 1~5 직진 구조라 Ante/Blind 3단 구분이 없다.
+- 현재 코드는 Boss 제약과 스킵 보상이 분리되어 있지 않다.
+- 재작성 시 `ante`, `blindType`, `blindReward`, `isSkipped`, `blindModifier` 상태를 분리해야 한다.
 
 ---
 
@@ -252,4 +264,3 @@ Seed 기반 완전 재현성 유지
 # 12. 한 줄 정의
 
 👉 진행은 점점 어려워지고, 규칙은 점점 제한되며, 플레이어는 그 안에서 빌드를 완성한다.
-

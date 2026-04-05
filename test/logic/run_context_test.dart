@@ -94,6 +94,8 @@ void main() {
       expect(result.breakdown.finalScore, 12);
       expect(context.stage?.currentScore, 12);
       expect(context.player.playsLeft, 4);
+      expect(context.player.combinationCountFor(CombinationType.pair), 1);
+      expect(context.player.combinationLevelFor(CombinationType.pair), 1);
     });
 
     test('기본 straight는 점수 누적에 사용된다', () {

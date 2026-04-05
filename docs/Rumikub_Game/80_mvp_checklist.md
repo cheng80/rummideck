@@ -20,15 +20,17 @@
 - 점수 시스템 (Chips × Mult × XMult)
 - Jester 슬롯 5
 - 상점 (Jester만)
-- Ante/Blind 진행 (1~5단계로 축소 가능)
+- Ante/Blind 진행 (Small / Big / Boss 구조 유지)
 - Seed 입력/표시
 
 ## 제외 (보류)
-- Tarot / Planet / Spectral
+- Tarot / Spectral
 - Voucher / Booster Pack
 - 메타 업그레이드
 - 챌린지/데일리
 - 고급 애니메이션/사운드
+
+> 주의: **Planet은 제거된 시스템이 아니라, 핸드 레벨업 원형 규칙과 직접 연결된 보류 시스템**이다. 레벨 표시는 Planet 복구를 염두에 두고 설계해야 한다.
 
 ---
 
@@ -53,7 +55,7 @@
 - [ ] Blind 진행 / 목표 점수 체크
 
 **Done when**
-- UI 없이 1~5 Stage 시뮬레이션 가능
+- UI 없이 Ante 1의 Small / Big / Boss 시뮬레이션 가능
 
 ---
 
@@ -152,10 +154,11 @@
 
 1. 세로 한 화면에서 1런 플레이 가능
 2. Ante 1~5 진행 가능
-3. Jester 최소 8종 동작
-4. 상점 구매/리롤 동작
-5. Seed 재현 100%
-6. PLAYTEST 기준 통과
+3. Ante 1의 Small / Big / Boss 구조가 실제로 동작
+4. Jester 최소 8종 동작
+5. 상점 구매/리롤 동작
+6. Seed 재현 100%
+7. PLAYTEST 기준 통과
 
 ---
 
@@ -195,4 +198,3 @@
 # 10. 한 줄 정의
 
 👉 **가장 적은 기능으로 Balatro의 핵심 재미(조합 + Jester + 점수 폭발)를 재현하는 것이 MVP의 목표다.**
-

@@ -49,7 +49,7 @@ class RunContext {
   final SeededRng rng;
 
   PlayerState player;
-  StageState stage;
+  BlindState blind;
   ShopState? shop;
 }
 ```
@@ -77,12 +77,14 @@ class PlayerState {
 ```dart
 class StageState {
   int ante;
-  int blindIndex;
+  BlindType blindType;
 
   int targetScore;
   int currentScore;
 }
 ```
+
+> 현재 코드의 `stageIndex` 단일 상태는 임시 구현이며, 재작성 목표는 `ante + blindType` 분리다.
 
 ---
 
@@ -215,7 +217,7 @@ class ShopState {
 - 현재 점수 / 목표 점수
 - 남은 Hands / Discards
 - Gold
-- Seed (축약 표기 가능)
+- Run Info / Options
 
 ### 중단 (엔진/해석 영역)
 - Jester 슬롯 (항상 표시)
@@ -224,7 +226,7 @@ class ShopState {
 - Boss 제약 요약
 
 ### 하단 (입력 영역)
-- 손패 8개 (한 화면에 전부 표시)
+- 손패 8~16개 (1줄 또는 2줄)
 - 제출 버튼
 - 버리기 버튼
 - 선택 해제 버튼
@@ -236,6 +238,7 @@ class ShopState {
 
 ## 11.4 손패 표시 규칙
 - 8장을 **스크롤 없이** 모두 표시
+- 9~16장은 2줄 압축 배치 허용
 - 1줄 또는 2줄 압축 배치 허용
 - 선택 상태는 색상/테두리/확대로 명확히 표시
 
@@ -286,4 +289,3 @@ Seed 재현성 보장
 # 15. 한 줄 정의
 
 👉 이 구조는 Balatro의 이벤트 기반 엔진을 Flutter + Flame으로 재현하기 위한 최소 구조다.
-

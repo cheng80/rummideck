@@ -22,6 +22,10 @@
 
 작업 내용이 **룰·수치·Jester**에 닿으면 `docs/Rumikub_Game/` 아래 문서를 **필요한 만큼만** 연다. 우선순위는 설계 요약 [`00_rummikub_balatro_minimal_and_detailed_design.md`](docs/Rumikub_Game/00_rummikub_balatro_minimal_and_detailed_design.md)의 문서 맵 표를 따른다.
 
+현재 UI 작업 메모:
+- 우측 덱 영역에 잔여 덱 수 표기를 다시 넣는 중이며, 드로우/리필은 우측 덱에서 손패로 날아오는 연출 기준으로 맞추고 있다.
+- 드로우 애니메이션 중에는 최상단 투명 입력 차단 레이어 기반이 들어가 있다. 이후 플레이/점수/Jester 연출도 같은 락 구조로 확장할 예정.
+
 ---
 
 ## 2. 설계·룰 문서 읽는 순서 (충돌 시)

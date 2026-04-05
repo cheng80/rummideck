@@ -70,6 +70,8 @@ schemas/
 ### 4.1 현재 상태
 - `jesters_common.json`
   - Common Jester 61종을 1차 확정하여 모아둔 파일
+- 런타임 최종 목표는 `Anomaly` 임시 카탈로그가 아니라 이 파일을 직접 읽는 구조다.
+- 번역 표시는 `assets/translations/data/en/jesters.json`, `assets/translations/data/ko/jesters.json`를 우선 사용한다.
 
 ### 4.2 이후 예정
 추후 경로와 파일 체계가 정리되면 아래처럼 확장한다.

@@ -93,6 +93,8 @@
 
 - Pair는 **기본 허용**
 - Two Pair는 **기본 허용**
+- 유효 조합이 없어도 `Play`는 허용하며, 이 경우 가장 높은 숫자 타일 1장을 기준으로 `highTile` 처리
+- 선택 타일 중 조합에 포함되지 않은 나머지 타일은 점수 없이 discard 처리
 - Ace는 현재 MVP에서 **`10-11-12-13-1` 크라운 조합**에만 사용
 - `1-2-3-4-5` Straight는 이번 재작성 1차에서 **미지원**
 - 우선순위:
@@ -117,12 +119,13 @@
 ### 6.1 계산 순서
 
 1. 핸드 판정
-2. Base Chips 산정
-3. Number Bonus 산정
-4. Jester Chips 적용
-5. Jester Mult 합산
-6. Jester XMult 곱연산
-7. 최종 점수 반영
+2. 제출 타일 중 점수 계산 대상 조합 타일 확정
+3. Base Chips 산정
+4. Number Bonus 산정
+5. Jester Chips 적용
+6. Jester Mult 합산
+7. Jester XMult 곱연산
+8. 최종 점수 반영
 
 ### 6.2 MVP 계산식 잠금
 
@@ -130,7 +133,7 @@
 
 ### 6.3 Number Bonus
 
-- `floor(선택 타일 숫자 합 × 0.2)`
+- `floor(점수 계산 대상으로 확정된 타일 숫자 합 × 0.2)`
 
 ### 6.4 Base Chips
 
@@ -148,6 +151,12 @@
 - `colorStraight = 55`
 - `longStraight = 100`
 
+### 6.5 조합표 레벨 표시
+
+- `Run Info`의 포커 핸드 표는 각 조합의 `레벨 / 이름 / chips x mult / 업그레이드 상태`를 표시한다.
+- Balatro 원형 기준에서 핸드 레벨은 **Planet 카드 등 업그레이드 효과**로 상승한다.
+- 현재 코드의 “해당 조합 10회 사용마다 레벨 +1” 규칙은 임시 구현이며, 재작성 정답 규칙으로 채택하지 않는다.
+
 ---
 
 ## 7. 진행 구조 기준
@@ -157,15 +166,18 @@
 - Hand size: `8`
 - Hands per blind: `4`
 - Discards per blind: `3`
+- Jester slots: `5`
 
 ### 7.2 진행 흐름
 
 1. Run 시작
 2. Ante 1 Small Blind
-3. Ante 1 Big Blind
-4. Ante 1 Boss Blind
+3. Shop
+4. Ante 1 Big Blind
 5. Shop
-6. 다음 Ante
+6. Ante 1 Boss Blind
+7. Shop
+8. 다음 Ante
 
 ### 7.3 Blind 배율
 
@@ -175,7 +187,8 @@
 
 ### 7.4 보상/스킵 기준
 
-- Blind 보상은 문서 원형을 유지하되, **재작성 1차는 Boss 이후 Shop 진입**만 우선 구현
+- Blind 보상은 `Small $3 / Big $4 / Boss $5`를 기준으로 둔다
+- Blind를 이길 때마다 Shop 진입 구조를 유지한다
 - Small / Big 스킵은 구조만 고려하고, 실제 버튼/보상은 2차로 미룸
 - Boss는 스킵 불가
 

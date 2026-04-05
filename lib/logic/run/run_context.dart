@@ -76,6 +76,11 @@ class RunContext {
   }
 
   void startStage(int stageIndex) {
+    if (player.hand.isNotEmpty) {
+      _discardPile.addAll(player.hand);
+      player.hand.clear();
+    }
+
     stage = StageState(
       stageIndex: stageIndex,
       targetScore: _stageTargetCalculator.forStage(stageIndex),
