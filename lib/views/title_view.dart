@@ -1,0 +1,286 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../app_config.dart';
+import '../resources/asset_paths.dart';
+import '../resources/sound_manager.dart';
+
+/// 타이틀 화면.
+class TitleView extends StatelessWidget {
+  const TitleView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const _StarryBackground(),
+          SafeArea(
+            child: Center(
+              child: Column(
+                children: [
+                  const Spacer(flex: 3),
+                  Text(
+                    AppConfig.gameTitle,
+                    style: TextStyle(
+                      fontFamily: AssetPaths.fontAngduIpsul140,
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      letterSpacing: 6,
+                    ),
+                  ),
+                  Text(
+                    AppConfig.gameTitleSub,
+                    style: TextStyle(
+                      fontFamily: AssetPaths.fontAngduIpsul140,
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFFD54F),
+                      letterSpacing: 4,
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+                          blurRadius: 24,
+                        ),
+                        const Shadow(
+                          color: Color(0xFFE65100),
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppConfig.gameSubtitle,
+                    style: TextStyle(
+                      fontFamily: AssetPaths.fontAngduIpsul140,
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const Spacer(flex: 3),
+                  _RoundButton(
+                    label: '게임 시작',
+                    color: const Color(0xFF3CAEE0),
+                    onPressed: () {
+                      SoundManager.playSfx(AssetPaths.sfxBtnSnd);
+                      context.go(RoutePaths.game);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _RoundButton(
+                    label: '설정',
+                    color: const Color(0xFF7E57C2),
+                    onPressed: () {
+                      SoundManager.playSfx(AssetPaths.sfxBtnSnd);
+                      context.push(RoutePaths.setting);
+                    },
+                  ),
+                  const Spacer(flex: 2),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  const _RoundButton({
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    const width = 260.0;
+    const height = 68.0;
+    const fontSize = 32.0;
+    final darkerColor = HSLColor.fromColor(color)
+        .withLightness(
+          (HSLColor.fromColor(color).lightness - 0.15).clamp(0.0, 1.0),
+        )
+        .toColor();
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [color, darkerColor],
+          ),
+          borderRadius: BorderRadius.circular(height / 2),
+          border: Border.all(
+            color: darkerColor.withValues(alpha: 0.6),
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: darkerColor.withValues(alpha: 0.5),
+              offset: const Offset(0, 4),
+              blurRadius: 0,
+            ),
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 16,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: AssetPaths.fontAngduIpsul140,
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 6,
+              shadows: [
+                Shadow(
+                  color: darkerColor.withValues(alpha: 0.8),
+                  offset: const Offset(1, 1),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StarryBackground extends StatefulWidget {
+  const _StarryBackground();
+
+  @override
+  State<_StarryBackground> createState() => _StarryBackgroundState();
+}
+
+class _StarryBackgroundState extends State<_StarryBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          size: MediaQuery.of(context).size,
+          painter: _StarPainter(_controller.value),
+        );
+      },
+    );
+  }
+}
+
+class _StarPainter extends CustomPainter {
+  _StarPainter(this.time);
+  final double time;
+
+  static final List<_Star> _stars = _generateStars(100);
+
+  static List<_Star> _generateStars(int count) {
+    final rng = Random(42);
+    return List.generate(count, (_) {
+      return _Star(
+        x: rng.nextDouble(),
+        y: rng.nextDouble(),
+        radius: rng.nextDouble() * 1.6 + 0.3,
+        speed: rng.nextDouble() * 2.0 + 0.5,
+        offset: rng.nextDouble() * 2 * pi,
+        colorIndex: rng.nextInt(4),
+      );
+    });
+  }
+
+  static const _colors = [
+    Colors.white,
+    Color(0xFFAADDFF),
+    Color(0xFFFFEEAA),
+    Color(0xFFFFAAAA),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF05051A),
+          Color(0xFF0A0A2E),
+          Color(0xFF12123A),
+          Color(0xFF0A0A2E),
+          Color(0xFF05051A),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    for (final star in _stars) {
+      final t = time * 2 * pi;
+      final twinkle = sin(t * star.speed + star.offset);
+      final alpha = (0.4 + twinkle * 0.4).clamp(0.05, 1.0);
+      final color = _colors[star.colorIndex];
+      final paint = Paint()..color = color.withValues(alpha: alpha);
+      final cx = star.x * size.width;
+      final cy = star.y * size.height;
+      canvas.drawCircle(Offset(cx, cy), star.radius, paint);
+
+      if (star.radius > 1.2) {
+        final glowPaint = Paint()
+          ..color = color.withValues(alpha: alpha * 0.15)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+        canvas.drawCircle(Offset(cx, cy), star.radius * 2.5, glowPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StarPainter oldDelegate) => oldDelegate.time != time;
+}
+
+class _Star {
+  final double x, y, radius, speed, offset;
+  final int colorIndex;
+
+  const _Star({
+    required this.x,
+    required this.y,
+    required this.radius,
+    required this.speed,
+    required this.offset,
+    required this.colorIndex,
+  });
+}

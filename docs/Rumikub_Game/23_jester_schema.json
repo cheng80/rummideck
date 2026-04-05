@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jester.schema.json",
+  "title": "Balatro Jester Catalog Schema",
+  "description": "Schema for preserving Balatro Jester data in a structured format for the tile-based adaptation project.",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "displayName",
+    "rarity",
+    "baseCost",
+    "effectText",
+    "trigger",
+    "editionAllowed",
+    "stickersAllowed",
+    "unlockCondition",
+    "notes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique internal ID used by code and data references.",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Original Balatro Joker name."
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Project display name. Usually same as original unless localized."
+    },
+    "rarity": {
+      "type": "string",
+      "enum": ["common", "uncommon", "rare", "legendary"],
+      "description": "Original rarity classification."
+    },
+    "baseCost": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Base shop cost before edition modifiers."
+    },
+    "effectText": {
+      "type": "string",
+      "description": "Original effect text preserved as source reference."
+    },
+    "trigger": {
+      "type": "string",
+      "enum": [
+        "passive",
+        "onScore",
+        "onPlay",
+        "onDiscard",
+        "onBlindSelected",
+        "onRoundEnd",
+        "held",
+        "retrigger",
+        "economy",
+        "other"
+      ],
+      "description": "Primary runtime trigger used for implementation grouping."
+    },
+    "editionAllowed": {
+      "type": "boolean",
+      "description": "Whether standard editions can apply."
+    },
+    "stickersAllowed": {
+      "type": "boolean",
+      "description": "Whether stickers can apply under higher difficulty."
+    },
+    "unlockCondition": {
+      "type": ["string", "null"],
+      "description": "Unlock condition text, null if available from start."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Implementation notes, compatibility notes, or temporary porting notes."
+    },
+    "effectType": {
+      "type": "string",
+      "enum": [
+        "chips_bonus",
+        "mult_bonus",
+        "xmult_bonus",
+        "rule_modifier",
+        "economy",
+        "copy",
+        "retrigger",
+        "deck_modifier",
+        "shop_modifier",
+        "stateful_growth",
+        "other"
+      ],
+      "description": "Structured classification for implementation."
+    },
+    "conditionType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pair",
+        "two_pair",
+        "three_of_a_kind",
+        "straight",
+        "flush",
+        "full_house",
+        "four_of_a_kind",
+        "straight_flush",
+        "royal_flush",
+        "five_of_a_kind",
+        "flush_house",
+        "flush_five",
+        "suit_scored",
+        "rank_scored",
+        "face_card",
+        "number_card",
+        "held_card",
+        "discarded_card",
+        "blind_selected",
+        "shop_entered",
+        "money_threshold",
+        "stateful",
+        "other"
+      ],
+      "description": "Main condition bucket used for searching and implementation."
+    },
+    "conditionValue": {
+      "type": ["string", "number", "array", "null"],
+      "description": "Optional value describing the condition, such as specific hand, suit, rank, or threshold."
+    },
+    "value": {
+      "type": ["integer", "number", "null"],
+      "description": "Primary numeric value for additive effects."
+    },
+    "xValue": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Primary multiplicative value for XMult-style effects."
+    },
+    "originalSuitRefs": {
+      "type": "array",
+      "description": "Original card suit references used by the Jester.",
+      "items": {
+        "type": "string",
+        "enum": ["hearts", "spades", "diamonds", "clubs"]
+      },
+      "uniqueItems": true
+    },
+    "mappedTileColors": {
+      "type": "array",
+      "description": "Mapped tile colors corresponding to original suit references.",
+      "items": {
+        "type": "string",
+        "enum": ["red", "blue", "yellow", "black"]
+      },
+      "uniqueItems": true
+    },
+    "originalRankRefs": {
+      "type": "array",
+      "description": "Original rank references used by the Jester.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ace",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "jack",
+          "queen",
+          "king",
+          "face_card",
+          "number_card"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "mappedTileNumbers": {
+      "type": "array",
+      "description": "Mapped tile numbers corresponding to original rank references.",
+      "items": {
+        "type": ["integer", "string"],
+        "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, "face_card", "number_card"]
+      },
+      "uniqueItems": true
+    },
+    "source": {
+      "type": "object",
+      "required": ["origin", "verified"],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "description": "Source reference used when recording this Jester."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the entry was manually verified against the source."
+        },
+        "sourceNotes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

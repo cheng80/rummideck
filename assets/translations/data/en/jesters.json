@@ -1,0 +1,311 @@
+{
+  "data": {
+    "jesters": {
+      "jester": {
+        "displayName": "Jester",
+        "effectText": "+4 Mult",
+        "notes": "Base multiplier card"
+      },
+      "greedy_jester": {
+        "displayName": "Greedy Jester",
+        "effectText": "Played Diamonds give +3 Mult",
+        "notes": "Suit-based bonus"
+      },
+      "lusty_jester": {
+        "displayName": "Lusty Jester",
+        "effectText": "Played Hearts give +3 Mult",
+        "notes": "Suit-based bonus"
+      },
+      "wrathful_jester": {
+        "displayName": "Wrathful Jester",
+        "effectText": "Played Spades give +3 Mult",
+        "notes": "Suit-based bonus"
+      },
+      "gluttonous_jester": {
+        "displayName": "Gluttonous Jester",
+        "effectText": "Played Clubs give +3 Mult",
+        "notes": "Suit-based bonus"
+      },
+      "jolly_jester": {
+        "displayName": "Jolly Jester",
+        "effectText": "Played hand containing a Pair gives +8 Mult",
+        "notes": "Hand-type additive mult jester."
+      },
+      "zany_jester": {
+        "displayName": "Zany Jester",
+        "effectText": "Played hand containing a Three of a Kind gives +12 Mult",
+        "notes": "The fandom page explicitly states this includes hands containing any three cards with the same rank, such as Full House."
+      },
+      "mad_jester": {
+        "displayName": "Mad Jester",
+        "effectText": "Played hand containing Two Pair gives +10 Mult",
+        "notes": "Hand-type additive mult jester."
+      },
+      "crazy_jester": {
+        "displayName": "Crazy Jester",
+        "effectText": "Played hand containing a Straight gives +12 Mult",
+        "notes": "Hand-type additive mult jester."
+      },
+      "droll_jester": {
+        "displayName": "Droll Jester",
+        "effectText": "Played hand containing a Flush gives +10 Mult",
+        "notes": "Hand-type additive mult jester."
+      },
+      "sly_jester": {
+        "displayName": "Sly Jester",
+        "effectText": "Played hand containing a Pair gives +50 Chips",
+        "notes": "Hand-type chip jester."
+      },
+      "wily_jester": {
+        "displayName": "Wily Jester",
+        "effectText": "Played hand containing a Three of a Kind gives +100 Chips",
+        "notes": "Hand-type chip jester."
+      },
+      "clever_jester": {
+        "displayName": "Clever Jester",
+        "effectText": "Played hand containing Two Pair gives +80 Chips",
+        "notes": "Hand-type chip jester."
+      },
+      "devious_jester": {
+        "displayName": "Devious Jester",
+        "effectText": "Played hand containing a Straight gives +100 Chips",
+        "notes": "Hand-type chip jester."
+      },
+      "crafty_jester": {
+        "displayName": "Crafty Jester",
+        "effectText": "Played hand containing a Flush gives +80 Chips",
+        "notes": "Hand-type chip jester."
+      },
+      "half_jester": {
+        "displayName": "Half Jester",
+        "effectText": "+20 Mult if played hand contains 3 or fewer cards",
+        "notes": "Size-restricted additive mult jester."
+      },
+      "jester_stencil": {
+        "displayName": "Jester Stencil",
+        "effectText": "X1 Mult for each empty Jester slot",
+        "notes": "Rewards keeping empty slots"
+      },
+      "four_fingers": {
+        "displayName": "Four Fingers",
+        "effectText": "All Straights and Flushes can be made with 4 cards",
+        "notes": "Rule modifier"
+      },
+      "mime": {
+        "displayName": "Mime",
+        "effectText": "Retrigger all held in hand abilities",
+        "notes": "Retrigger engine"
+      },
+      "hack": {
+        "displayName": "Hack",
+        "effectText": "Retrigger all played cards",
+        "notes": "Retrigger played cards"
+      },
+      "misprint": {
+        "displayName": "Misprint",
+        "effectText": "Random Mult between 0 and 23",
+        "notes": "High variance card"
+      },
+      "credit_card": {
+        "displayName": "Credit Card",
+        "effectText": "Go up to -$20 in debt",
+        "notes": "Economy jester. Can be bought and later sold for the same price."
+      },
+      "abstract_jester": {
+        "displayName": "Abstract Jester",
+        "effectText": "+3 Mult for each Jester card (Currently +0 Mult)",
+        "notes": "Includes itself, so it gives at least +3 Mult."
+      },
+      "green_jester": {
+        "displayName": "Green Jester",
+        "effectText": "+1 Mult per hand played, -1 Mult per discard (Currently +0 Mult)",
+        "notes": "Mixed activation; scales upward with hands and downward with discards."
+      },
+      "blue_jester": {
+        "displayName": "Blue Jester",
+        "effectText": "+2 Chips for each card remaining in deck",
+        "notes": "Value decreases as the round continues and cards leave the deck into hand/play/discard."
+      },
+      "scary_face": {
+        "displayName": "Scary Face",
+        "effectText": "Played face cards give +30 Chips when scored",
+        "notes": "Face cards are Jack, Queen, and King. In tile mapping this means 11, 12, 13."
+      },
+      "smiley_face": {
+        "displayName": "Smiley Face",
+        "effectText": "Played face cards give +5 Mult when scored",
+        "notes": "Face cards are Jack, Queen, and King. In tile mapping this means 11, 12, 13."
+      },
+      "faceless_jester": {
+        "displayName": "Faceless Jester",
+        "effectText": "Earn $5 if 3 or more face cards are discarded at the same time",
+        "notes": "Debuffed face cards do not count. Face cards map to 11, 12, 13."
+      },
+      "egg": {
+        "displayName": "Egg",
+        "effectText": "Earn $3 at end of round",
+        "notes": "Simple economy generator"
+      },
+      "business_card": {
+        "displayName": "Business Card",
+        "effectText": "Played face cards have a 50% chance to give $2",
+        "notes": "Face card economy RNG"
+      },
+      "bonus_jester": {
+        "displayName": "Bonus Jester",
+        "effectText": "+10 Chips",
+        "notes": "Flat chip boost"
+      },
+      "popcorn": {
+        "displayName": "Popcorn",
+        "effectText": "+20 Mult, loses 4 Mult per round",
+        "notes": "Decay mult jester"
+      },
+      "shoot_the_moon": {
+        "displayName": "Shoot the Moon",
+        "effectText": "Each Queen held in hand gives +13 Mult",
+        "notes": "Queen synergy"
+      },
+      "ice_cream": {
+        "displayName": "Ice Cream",
+        "effectText": "+100 Chips, loses 5 Chips for every hand played",
+        "notes": "Decay chip jester. Starts strong and shrinks as hands are used."
+      },
+      "splash": {
+        "displayName": "Splash",
+        "effectText": "Every played card counts in scoring",
+        "notes": "Rule modifier that expands scoring cards beyond standard hand rules."
+      },
+      "8_ball": {
+        "displayName": "8 Ball",
+        "effectText": "Each played 8 has a chance to generate a Tarot card",
+        "notes": "Tarot generation RNG card"
+      },
+      "delayed_gratification": {
+        "displayName": "Delayed Gratification",
+        "effectText": "Earn $2 per discard unused at end of round",
+        "notes": "Encourages conserving discards"
+      },
+      "raised_fist": {
+        "displayName": "Raised Fist",
+        "effectText": "Adds the rank of the lowest card held in hand to Mult",
+        "notes": "Uses lowest rank in hand for scaling"
+      },
+      "square_jester": {
+        "displayName": "Square Jester",
+        "effectText": "Gains +4 Chips if played hand has exactly 4 cards",
+        "notes": "Exact hand size condition"
+      },
+      "photograph": {
+        "displayName": "Photograph",
+        "effectText": "First scored face card gives X2 Mult",
+        "notes": "Triggers once per hand"
+      },
+      "walkie_talkie": {
+        "displayName": "Walkie Talkie",
+        "effectText": "Each played 10 or 4 gives +4 Mult",
+        "notes": "Specific rank combo"
+      },
+      "golden_jester": {
+        "displayName": "Golden Jester",
+        "effectText": "Earn $4 at end of each blind",
+        "notes": "Baseline economy jester. Fandom page shows sell value $3, implying buy price $6."
+      },
+      "juggler": {
+        "displayName": "Juggler",
+        "effectText": "+1 hand size",
+        "notes": "Hand-size effect jester."
+      },
+      "drunkard": {
+        "displayName": "Drunkard",
+        "effectText": "+1 discard each round",
+        "notes": "Discard-capacity effect jester."
+      },
+      "mystic_summit": {
+        "displayName": "Mystic Summit",
+        "effectText": "+15 Mult when 0 discards remaining",
+        "notes": "Conditional additive mult jester."
+      },
+      "red_card": {
+        "displayName": "Red Card",
+        "effectText": "This Jester gains +3 Mult when any Booster Pack is skipped (Currently +0 Mult)",
+        "notes": "Booster-linked scaling mult jester. Preserve source behavior even if Booster Packs are currently disabled."
+      },
+      "mail_in_rebate": {
+        "displayName": "Mail-In Rebate",
+        "effectText": "Earn $5 for each card discarded of the specified rank",
+        "notes": "Target rank changes every round, choosing from a random rank in deck, weighted by frequency."
+      },
+      "to_do_list": {
+        "displayName": "To Do List",
+        "effectText": "Earn $4 if poker hand is a [Poker Hand], poker hand changes at end of round",
+        "notes": "Dynamic target hand economy jester."
+      },
+      "reserved_parking": {
+        "displayName": "Reserved Parking",
+        "effectText": "Each held face card gives $1 at end of round",
+        "notes": "Economy scaling with held face cards."
+      },
+      "trading_card": {
+        "displayName": "Trading Card",
+        "effectText": "If first discard of round has exactly 1 card, destroy it and gain $3",
+        "notes": "Single-card discard converter."
+      },
+      "even_steven": {
+        "displayName": "Even Steven",
+        "effectText": "Played cards with even rank give +4 Mult when scored",
+        "notes": "Even ranks in Balatro are 2, 4, 6, 8, and 10."
+      },
+      "odd_todd": {
+        "displayName": "Odd Todd",
+        "effectText": "Played cards with odd rank give +31 Chips when scored",
+        "notes": "Odd ranks in Balatro are A, 3, 5, 7, and 9."
+      },
+      "scholar": {
+        "displayName": "Scholar",
+        "effectText": "Played Aces give +20 Chips and +4 Mult when scored",
+        "notes": "Ace-specific dual bonus jester. In tile mapping, Ace = 1."
+      },
+      "fortune_teller": {
+        "displayName": "Fortune Teller",
+        "effectText": "+1 Mult per Tarot card used this run (Currently +0)",
+        "notes": "Retroactive scaling. Preserve source behavior even if Tarot cards are currently disabled in project runtime."
+      },
+      "fibonacci": {
+        "displayName": "Fibonacci",
+        "effectText": "Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored",
+        "notes": "Classic sequence synergy"
+      },
+      "banner": {
+        "displayName": "Banner",
+        "effectText": "+30 Chips for each remaining discard",
+        "notes": "Encourages conserving discards"
+      },
+      "gros_michel": {
+        "displayName": "Gros Michel",
+        "effectText": "+15 Mult",
+        "notes": "Unconditional additive mult banana jester. Destruction/chance behavior should be added from the full card page in a later verification pass."
+      },
+      "supernova": {
+        "displayName": "Supernova",
+        "effectText": "Adds the number of times poker hand has been played this run to Mult",
+        "notes": "Retroactive scaling additive mult jester based on the current scoring hand type."
+      },
+      "ride_the_bus": {
+        "displayName": "Ride the Bus",
+        "effectText": "This Jester gains +1 Mult per consecutive hand played without a scoring face card (Currently +0 Mult)",
+        "notes": "Resets when a scoring face card is included. Face cards map to 11, 12, 13."
+      },
+      "constellation": {
+        "displayName": "Constellation",
+        "effectText": "This Jester gains X0.1 Mult per Planet card used (Currently X1 Mult)",
+        "notes": "Depends on Planet usage. Keep source data intact even if Planets are currently disabled in project runtime."
+      },
+      "hanging_chad": {
+        "displayName": "Hanging Chad",
+        "effectText": "Retrigger first played card used in scoring",
+        "notes": "Retrigger first scoring card"
+      }
+    }
+  }
+}
