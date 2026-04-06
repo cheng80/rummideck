@@ -1,7 +1,7 @@
 # Riverpod + 모듈 분리 리팩토링 플랜
 
 > **기준일**: 2026-04-06  
-> **최종 갱신**: 2026-04-06 (Phase 1–3, 5 완료 / Phase 6-A~E 완료)  
+> **최종 갱신**: 2026-04-06 (Phase 1–3, 5–7 전체 완료)  
 > **원칙**: CURSOR.md — "작은 단위 변경", "실행 가능한 코드 유지", "UI/Logic 분리"  
 > **참조 프로젝트**: `flame_tab_order` (easy_localization), `hivetodo` (Riverpod 3 + ConsumerWidget)
 
@@ -132,6 +132,23 @@ lib/vm/
 - [x] `_rarityLabel(dynamic)` → `_rarityLabel(AnomalyRarity)` 타입 안전 switch
 - [x] `LargeActionButton.subtitle` 미사용 필드 제거 (`required` 파라미터 삭제, 호출부 정리)
 
+### Phase 7: 하드코딩 색상 전수 추출 + 레이아웃 정리 ✅
+
+> 남은 모든 `Color(0x...)` 리터럴을 `AppColors`로 추출하고, 미사용 파라미터를 정리한다.
+
+- [x] `battle_center.dart`: `Color(0x552C7A66)` → `AppColors.centerPanelBg`, `Color(0x55D8C27A)` → `AppColors.centerPanelBorder`
+- [x] `battle_top_strip.dart`: `Color(0x44FFFFFF)` → `AppColors.metaRowBorder`, 패널 색상 6종 추출
+- [x] `game_modals.dart`: 모달 배경/보더/텍스트 색상 7종 추출
+- [x] `title_view.dart`: 타이틀 화면 테마 색상 14종 추출
+- [x] `game_view.dart`: `CompactBattleLayout.viewport` 미사용 파라미터 제거, `BattleTableScene` 불필요 `LayoutBuilder` 제거
+
+### Phase 8: 반응형 레이아웃 (iPad/iPhone 동일 비율) ✅
+
+- [x] `FittedBox` 기반 스케일링: 기준 해상도 402×778에서 렌더링 후 화면에 맞게 확대
+- [x] 조건부 적용: iPhone(`shortSide ≤ 500`)은 스케일링 없이 전체 화면, iPad는 `FittedBox` 적용
+- [x] SafeArea 밖 `Colors.black`, SafeArea 안 여백 `AppColors.tableGreen3`
+- [x] 중앙 패널 타일 위치 `Alignment.bottomCenter`로 변경
+
 ---
 
 ## 전환 규칙 (완료 기록)
@@ -178,3 +195,8 @@ util/    → 유틸리티
 | 2026-04-06 | Phase 6-C 완료: BlindHeaderCard·FanHandZone build 분리 |
 | 2026-04-06 | Phase 6-E 추가: LargeActionButton.subtitle 미사용 필드 제거 |
 | 2026-04-06 | 추가 상수화: CompactMetaRow/Panel, 블라인드 배지 색상 → AppColors |
+| 2026-04-06 | Phase 7 완료: 남은 하드코딩 색상 전수 추출 (game_modals, title_view, battle_center, battle_top_strip) |
+| 2026-04-06 | game_view.dart 정리: CompactBattleLayout.viewport 미사용 파라미터 제거 |
+| 2026-04-06 | 반응형 레이아웃: FittedBox 기반 iPad/iPhone 동일 비율 스케일링 구현 |
+| 2026-04-06 | 배경 처리: SafeArea 밖 black, SafeArea 안 여백 AppColors.tableGreen3 |
+| 2026-04-06 | Phase 6~7 전체 완료 — 모든 리팩토링 단계 마감 |

@@ -71,9 +71,34 @@ abstract final class AppColors {
   static const Color jesterTextBody = Color(0xFF2E2A20);
   static const Color jesterTextName = Color(0xFF2A2519);
 
+  // ── 중앙 패널 ──
+  static const Color centerPanelBg = Color(0x552C7A66);
+  static const Color centerPanelBorder = Color(0x55D8C27A);
+
+  // ── 메타 행 ──
+  static const Color metaRowBorder = Color(0x44FFFFFF);
+
   // ── 모달 보조 ──
   static const Color mintButton = Color(0xFF63E6BE);
   static const Color tabInactive = Color(0xFF3C434A);
+  static const Color guideRowBg = Color(0xFFE8EEF8);
+  static const Color guideRowText = Color(0xFF2C3340);
+  static const Color gradientBlue = Color(0xFF2196F3);
+  static const Color gameOverBg = Color(0xF0331120);
+  static const Color runCompleteBg = Color(0xF0102C20);
+
+  // ── 타이틀 화면 ──
+  static const Color titleGold = Color(0xFFFFD54F);
+  static const Color titleOrange = Color(0xFFE65100);
+  static const Color titleBlue = Color(0xFF3CAEE0);
+  static const Color titlePurple = Color(0xFF7E57C2);
+  static const Color titleDropdown = Color(0xFF1A1A3E);
+  static const Color titleStarCyan = Color(0xFFAADDFF);
+  static const Color titleStarYellow = Color(0xFFFFEEAA);
+  static const Color titleStarPink = Color(0xFFFFAAAA);
+  static const Color titleBgDark = Color(0xFF05051A);
+  static const Color titleBgMid = Color(0xFF0A0A2E);
+  static const Color titleBgLight = Color(0xFF12123A);
 
   // ── 디버그 ──
   static const Color debugLockTint = Color(0x30FF4444);

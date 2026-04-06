@@ -38,9 +38,9 @@ class BattleCenterPanel extends ConsumerWidget {
         final displayedScore = resolution?.breakdown ?? score;
         return DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0x552C7A66),
+            color: AppColors.centerPanelBg,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0x55D8C27A), width: 2),
+            border: Border.all(color: AppColors.centerPanelBorder, width: 2),
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(

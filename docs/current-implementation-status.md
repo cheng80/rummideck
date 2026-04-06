@@ -59,9 +59,40 @@
 
 - `game_view.dart` → 7개 독립 import 파일 분리 (`game_common`, `battle_top_strip`, `jester_bar`, `battle_center`, `hand_zone`, `battle_bottom_bar`, `game_modals`)
 - `flutter_riverpod` 도입: `ChangeNotifierProvider.autoDispose`로 `GameSessionController` 관리
-- `lib/vm/game_session_provider.dart`에 Provider 정의
+- `lib/vm/game_session_provider.dart`에 Provider 2개 정의 (`gameSessionProvider`, `selectedSeedProvider`)
 - 모든 게임 위젯을 `ConsumerWidget`/`ConsumerStatefulWidget`으로 전환, controller prop 전달 완전 제거
 - 상세 리팩토링 계획/이력: `docs/refactoring-plan.md`
+
+### UI 코드 품질 개선 (2026-04-06 완료)
+
+- `lib/views/game/battle_theme.dart`: `AppColors`(71색상), `BattleSpacing`, `HandAnimationDurations` 중앙 집중 상수
+- 모든 UI 파일에서 하드코딩 `Color(0x...)` 제거 → `AppColors` 참조로 통일 (game_view, title_view 포함 전 파일)
+- `SubPanelSurface` 공통 래퍼 위젯 추출 (`LogTape`, `BreakdownBadge` 교체)
+- `BlindHeaderCard`, `FanHandZone` 긴 build 메서드 분리
+- `sameTileList()` 유틸리티 함수 공용화 (`lib/utils/tile_utils.dart`)
+- `JesterSlotCard.anomaly` 타입 안전화 (`dynamic` → `Anomaly?`)
+- `LargeActionButton.subtitle` 미사용 필드 제거
+- `CompactBattleLayout.viewport` 미사용 파라미터 제거
+
+### 반응형 레이아웃 (2026-04-06 완료)
+
+- iPad/iPhone 동일 레이아웃: `FittedBox` 스케일링 (기준 해상도 402×778)
+- iPhone에서는 스케일링 없이 화면 전체 사용 (`shortSide ≤ 500`)
+- iPad에서는 `FittedBox`로 기준 해상도 렌더링 후 균일 확대
+- SafeArea 밖: `Colors.black` / SafeArea 안 여백: `AppColors.tableGreen3`
+- 중앙 패널 타일 위치를 하단 로그 영역 바로 위(`Alignment.bottomCenter`)로 변경
+
+### 버그 수정 (2026-04-06)
+
+- 입력 락 미해제 수정 (`game_session_controller.dart`)
+- JesterSlotCard `String.characters` 에러 수정
+- JesterSlotCard `RenderFlex overflow` 수정
+- FanHandZone dispose 후 ref 사용 `StateError` 수정
+- 손패 시각 갱신 미반영 수정 (`addPostFrameCallback`)
+
+### 디버그 기능 (2026-04-06)
+
+- 타이틀 화면 시드 선택 드롭다운 (디버그용, `selectedSeedProvider`)
 
 ### 테스트
 
@@ -167,11 +198,11 @@
 
 ## 3. 지금 기준 다음 우선순위
 
-1. 실행 테스트: Riverpod 리팩토링 후 앱 실행 확인
-2. 점수 연출 마감: 카드별 팝업 위치/리듬/Jester 반응 정교화
-3. Anomaly 타입을 JSON 기반 JesterAnomaly로 완전 교체 (UI·상점 라벨 통일)
-4. 문서 대비 현재 불일치 정리: Hands 4/5, Ante×Blind 구조
-5. 첫 전투 ~ 1차 보스 수동 검증
+1. 점수 연출 마감: 카드별 팝업 위치/리듬/최종 점수 타이밍 튜닝
+2. Jester 반응 추가: 점수 기여 Jester 하이라이트/점멸
+3. 첫 전투 ~ 1차 보스 수동 검증
+4. Ante × Blind 3단 구조 (Small/Big/Boss) 재설계
+5. 비조합 Play 허용 (High Tile) 구현
 
 ## 4. 현재 확인된 핵심 불일치
 

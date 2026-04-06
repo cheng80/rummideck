@@ -222,14 +222,9 @@ class BattleTableScene extends StatelessWidget {
         Positioned.fill(
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return CompactBattleLayout(
-                  game: game,
-                  viewport: constraints.biggest,
-                  onRunInfo: onRunInfo,
-                );
-              },
+            child: CompactBattleLayout(
+              game: game,
+              onRunInfo: onRunInfo,
             ),
           ),
         ),
@@ -242,12 +237,10 @@ class CompactBattleLayout extends StatelessWidget {
   const CompactBattleLayout({
     super.key,
     required this.game,
-    required this.viewport,
     required this.onRunInfo,
   });
 
   final SampleGame game;
-  final Size viewport;
   final VoidCallback onRunInfo;
 
   @override

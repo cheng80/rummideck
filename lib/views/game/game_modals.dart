@@ -106,7 +106,7 @@ class ShopPanel extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: controller.advanceToNextStage,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF63E6BE),
+                      backgroundColor: AppColors.mintButton,
                       foregroundColor: Colors.black,
                     ),
                     child: const Text('다음 스테이지'),
@@ -337,14 +337,14 @@ class HandGuideRow extends StatelessWidget {
               width: 58,
               padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8EEF8),
+                color: AppColors.guideRowBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'Lv.$level',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF2C3340),
+                  color: AppColors.guideRowText,
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
                 ),
@@ -369,7 +369,7 @@ class HandGuideRow extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2196F3), Color(0xFFFF5B4F)],
+                  colors: [AppColors.gradientBlue, AppColors.coralGradientEnd],
                 ),
               ),
               child: Text(
@@ -411,7 +411,7 @@ class GameOverPanel extends ConsumerWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 340),
       child: GlassPanel(
-        color: const Color(0xF0331120),
+        color: AppColors.gameOverBg,
         child: Column(
           children: [
             const Text(
@@ -457,7 +457,7 @@ class RunCompletePanel extends ConsumerWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 340),
       child: GlassPanel(
-        color: const Color(0xF0102C20),
+        color: AppColors.runCompleteBg,
         child: Column(
           children: [
             const Text(

@@ -16,7 +16,7 @@
 | 상점·MVP 변칙(8종) | 로직 위주 완료 |
 | Flutter/Flame 게임 화면·HUD·오버레이 | 기본 완료 |
 | **완전 순회 게임성 (딜·드로우·리필·점수 연출 + 첫 전투~1차 보스)** | **진행 중 — 점수 연출 마감 필요** |
-| 시드 UI·표시 | **미완** (코드상 고정 문자열) |
+| 시드 UI·표시 | **디버그 드롭다운 구현** (정식 입력 UI 미완) |
 | 문서 기준 진행 (Ante/Blind 3단 등) | **미완** |
 | Balatro급 족보/문서·코드 완전 정합 | 검토·추가 작업 필요 |
 
@@ -189,13 +189,15 @@
 - [ ] 고급 이펙트·사운드 디테일 (§5.1 최소 연출 **이후**)
 - [x] `GameView` 분해: 7개 독립 import 파일로 모듈 분리 완료 (`game_common`, `battle_top_strip`, `jester_bar`, `battle_center`, `hand_zone`, `battle_bottom_bar`, `game_modals`)
 - [x] 상태관리 리팩토링: `flutter_riverpod` 도입, `ChangeNotifierProvider.autoDispose` 적용, 모든 게임 위젯 `ConsumerWidget`/`ConsumerStatefulWidget` 전환 완료
+- [x] UI 코드 품질: 하드코딩 색상 71개 → `AppColors` 추출, `SubPanelSurface` 공통 위젯, build 분리, 타입 안전화, 미사용 필드 정리
+- [x] 반응형 레이아웃: `FittedBox` 스케일링으로 iPad/iPhone 동일 비율 렌더링
 - [ ] 상태 구독 세분화: Provider `select()` 또는 파생 Provider 분리로 최소 리빌드 최적화 (프로파일링 후 진행)
 
 ---
 
 ## 현재 다음 작업 (단기 우선순위)
 
-1. **실행 테스트**: Riverpod 리팩토링 후 앱 실행 확인 (손패 선택/제출/버리기/상점/일시정지 주요 흐름)
+1. ~~**실행 테스트**: Riverpod 리팩토링 후 앱 실행 확인~~ ✅ iPad/iPhone 모두 동일 비율 동작 확인 완료 (2026-04-06)
 2. 점수 연출 마감
    카드별 팝업 위치, 상승 폭, 카드 간 텀, 최종 합산 점수 노출 시간을 실제 플레이 감각 기준으로 튜닝
 3. Jester 반응 추가

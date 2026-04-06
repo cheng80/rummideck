@@ -9,6 +9,7 @@ import '../app_config.dart';
 import '../resources/asset_paths.dart';
 import '../resources/sound_manager.dart';
 import '../vm/game_session_provider.dart';
+import 'game/battle_theme.dart';
 
 const _seedOptions = [
   'MVP-001',
@@ -58,15 +59,15 @@ class _TitleViewState extends ConsumerState<TitleView> {
                       fontFamily: AssetPaths.fontAngduIpsul140,
                       fontSize: 64,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFFFFD54F),
+                      color: AppColors.titleGold,
                       letterSpacing: 4,
                       shadows: [
                         Shadow(
-                          color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+                          color: AppColors.titleGold.withValues(alpha: 0.5),
                           blurRadius: 24,
                         ),
                         const Shadow(
-                          color: Color(0xFFE65100),
+                          color: AppColors.titleOrange,
                           offset: Offset(2, 2),
                           blurRadius: 0,
                         ),
@@ -81,7 +82,7 @@ class _TitleViewState extends ConsumerState<TitleView> {
                   const SizedBox(height: 24),
                   _RoundButton(
                     label: context.tr('startGame'),
-                    color: const Color(0xFF3CAEE0),
+                    color: AppColors.titleBlue,
                     onPressed: () {
                       SoundManager.playSfx(AssetPaths.sfxBtnSnd);
                       ref.read(selectedSeedProvider.notifier).state = _selectedSeed;
@@ -91,7 +92,7 @@ class _TitleViewState extends ConsumerState<TitleView> {
                   const SizedBox(height: 20),
                   _RoundButton(
                     label: context.tr('settings'),
-                    color: const Color(0xFF7E57C2),
+                    color: AppColors.titlePurple,
                     onPressed: () {
                       SoundManager.playSfx(AssetPaths.sfxBtnSnd);
                       context.push(RoutePaths.setting);
@@ -128,7 +129,7 @@ class _SeedSelector extends StatelessWidget {
         child: DropdownButton<String>(
           value: selected,
           isExpanded: true,
-          dropdownColor: const Color(0xFF1A1A3E),
+          dropdownColor: AppColors.titleDropdown,
           icon: const Icon(Icons.expand_more, color: Colors.white70),
           style: const TextStyle(
             color: Colors.white,
@@ -290,9 +291,9 @@ class _StarPainter extends CustomPainter {
 
   static const _colors = [
     Colors.white,
-    Color(0xFFAADDFF),
-    Color(0xFFFFEEAA),
-    Color(0xFFFFAAAA),
+    AppColors.titleStarCyan,
+    AppColors.titleStarYellow,
+    AppColors.titleStarPink,
   ];
 
   @override
@@ -302,11 +303,11 @@ class _StarPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Color(0xFF05051A),
-          Color(0xFF0A0A2E),
-          Color(0xFF12123A),
-          Color(0xFF0A0A2E),
-          Color(0xFF05051A),
+          AppColors.titleBgDark,
+          AppColors.titleBgMid,
+          AppColors.titleBgLight,
+          AppColors.titleBgMid,
+          AppColors.titleBgDark,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
