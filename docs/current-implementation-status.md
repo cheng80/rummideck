@@ -55,6 +55,14 @@
 - 상점 / 게임오버 / Pause 최상위 오버레이
 - `Run Info` 조합표 모달 기초 UI
 
+### UI 아키텍처 리팩토링 (2026-04-06 완료)
+
+- `game_view.dart` → 7개 독립 import 파일 분리 (`game_common`, `battle_top_strip`, `jester_bar`, `battle_center`, `hand_zone`, `battle_bottom_bar`, `game_modals`)
+- `flutter_riverpod` 도입: `ChangeNotifierProvider.autoDispose`로 `GameSessionController` 관리
+- `lib/vm/game_session_provider.dart`에 Provider 정의
+- 모든 게임 위젯을 `ConsumerWidget`/`ConsumerStatefulWidget`으로 전환, controller prop 전달 완전 제거
+- 상세 리팩토링 계획/이력: `docs/refactoring-plan.md`
+
 ### 테스트
 
 - 조합 판정 테스트
@@ -159,11 +167,11 @@
 
 ## 3. 지금 기준 다음 우선순위
 
-1. 점수 연출 마감: 카드별 팝업 위치/리듬/Jester 반응 정교화
-2. Anomaly 타입을 JSON 기반 JesterAnomaly로 완전 교체 (UI·상점 라벨 통일)
-3. 문서 대비 현재 불일치 정리: Hands 4/5, Ante×Blind 구조
-4. 첫 전투 ~ 1차 보스 수동 검증
-5. 그 다음 GameView 분해, Riverpod 전환 검토
+1. 실행 테스트: Riverpod 리팩토링 후 앱 실행 확인
+2. 점수 연출 마감: 카드별 팝업 위치/리듬/Jester 반응 정교화
+3. Anomaly 타입을 JSON 기반 JesterAnomaly로 완전 교체 (UI·상점 라벨 통일)
+4. 문서 대비 현재 불일치 정리: Hands 4/5, Ante×Blind 구조
+5. 첫 전투 ~ 1차 보스 수동 검증
 
 ## 4. 현재 확인된 핵심 불일치
 

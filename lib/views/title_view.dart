@@ -2,15 +2,34 @@ import 'dart:math';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app_config.dart';
 import '../resources/asset_paths.dart';
 import '../resources/sound_manager.dart';
+import '../vm/game_session_provider.dart';
+
+const _seedOptions = [
+  'MVP-001',
+  'MVP-002',
+  'MVP-003',
+  'MVP-004',
+  'MVP-005',
+  'BOSS-TEST',
+  'DEBUG-42',
+];
 
 /// 타이틀 화면.
-class TitleView extends StatelessWidget {
+class TitleView extends ConsumerStatefulWidget {
   const TitleView({super.key});
+
+  @override
+  ConsumerState<TitleView> createState() => _TitleViewState();
+}
+
+class _TitleViewState extends ConsumerState<TitleView> {
+  String _selectedSeed = _seedOptions.first;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +73,18 @@ class TitleView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Spacer(flex: 3),
+                  const Spacer(flex: 2),
+                  _SeedSelector(
+                    selected: _selectedSeed,
+                    onChanged: (seed) => setState(() => _selectedSeed = seed),
+                  ),
+                  const SizedBox(height: 24),
                   _RoundButton(
                     label: context.tr('startGame'),
                     color: const Color(0xFF3CAEE0),
                     onPressed: () {
                       SoundManager.playSfx(AssetPaths.sfxBtnSnd);
+                      ref.read(selectedSeedProvider.notifier).state = _selectedSeed;
                       context.go(RoutePaths.game);
                     },
                   ),
@@ -78,6 +103,52 @@ class TitleView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SeedSelector extends StatelessWidget {
+  const _SeedSelector({required this.selected, required this.onChanged});
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24, width: 1.5),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selected,
+          isExpanded: true,
+          dropdownColor: const Color(0xFF1A1A3E),
+          icon: const Icon(Icons.expand_more, color: Colors.white70),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+          items: [
+            for (final seed in _seedOptions)
+              DropdownMenuItem(
+                value: seed,
+                child: Text('Seed: $seed'),
+              ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onChanged(value);
+            }
+          },
+        ),
       ),
     );
   }

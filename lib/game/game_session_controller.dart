@@ -320,7 +320,6 @@ class GameSessionController extends ChangeNotifier {
         _run.finalizeSubmitContinuation(result: result);
         _applyCurrentHandSort();
         _statusMessage = '점수 계산 완료. 새 타일을 보충합니다.';
-        shouldUnlockInFinally = false;
         notifyListeners();
       }
     } finally {

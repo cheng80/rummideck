@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
@@ -14,15 +15,17 @@ void main() async {
   await SoundManager.preload();
   _applyKeepScreenOn();
   runApp(
-    EasyLocalization(
-      supportedLocales: const [
-        Locale('ko'),
-        Locale('en'),
-      ],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('ko'),
-      saveLocale: true,
-      child: const App(),
+    ProviderScope(
+      child: EasyLocalization(
+        supportedLocales: const [
+          Locale('ko'),
+          Locale('en'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('ko'),
+        saveLocale: true,
+        child: const App(),
+      ),
     ),
   );
 }

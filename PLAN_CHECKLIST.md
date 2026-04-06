@@ -187,22 +187,21 @@
 - [ ] 변칙 타일 대량 확장·밸런스
 - [ ] 메타 업그레이드·챌린지·난이도(Stake) UI
 - [ ] 고급 이펙트·사운드 디테일 (§5.1 최소 연출 **이후**)
-- [ ] `GameView` 분해: `battle_header`, `battle_center_panel`, `battle_hand_zone`, `battle_action_bar`, `battle_overlays` 등으로 화면 모듈 분리
-- [ ] 상태 구독 세분화: 기본 연출 완료 후 `GameSessionController`를 역할별 상태로 분리하고 빌드 범위를 축소
-- [ ] 상태관리 리팩토링: 기본 연출과 게임 루프가 안정화된 뒤 `Riverpod` 전환 여부를 검토하고 적용
+- [x] `GameView` 분해: 7개 독립 import 파일로 모듈 분리 완료 (`game_common`, `battle_top_strip`, `jester_bar`, `battle_center`, `hand_zone`, `battle_bottom_bar`, `game_modals`)
+- [x] 상태관리 리팩토링: `flutter_riverpod` 도입, `ChangeNotifierProvider.autoDispose` 적용, 모든 게임 위젯 `ConsumerWidget`/`ConsumerStatefulWidget` 전환 완료
+- [ ] 상태 구독 세분화: Provider `select()` 또는 파생 Provider 분리로 최소 리빌드 최적화 (프로파일링 후 진행)
 
 ---
 
 ## 현재 다음 작업 (단기 우선순위)
 
-1. 점수 연출 마감
+1. **실행 테스트**: Riverpod 리팩토링 후 앱 실행 확인 (손패 선택/제출/버리기/상점/일시정지 주요 흐름)
+2. 점수 연출 마감
    카드별 팝업 위치, 상승 폭, 카드 간 텀, 최종 합산 점수 노출 시간을 실제 플레이 감각 기준으로 튜닝
-2. Jester 반응 추가
+3. Jester 반응 추가
    점수에 기여한 Jester 카드에 하이라이트/점멸/간단 팝업 부여
-3. 첫 전투 ~ 1차 보스 수동 검증
+4. 첫 전투 ~ 1차 보스 수동 검증
    실제 플레이 한 사이클에서 입력 락, 드로우, 점수 반영, 상점 전환이 끊기지 않는지 확인
-4. 그 다음 리팩토링
-   `GameView` 분해, 상태 구독 세분화, Riverpod 전환 검토
 
 ---
 
