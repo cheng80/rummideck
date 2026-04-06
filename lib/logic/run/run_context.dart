@@ -14,10 +14,19 @@ import '../state/stage_state.dart';
 enum RunPhase { stage, shop, completed, gameOver }
 
 class SubmitResult {
-  const SubmitResult({required this.combination, required this.breakdown});
+  const SubmitResult({
+    required this.combination,
+    required this.breakdown,
+    required this.stageCleared,
+    required this.shouldRefillHand,
+    required this.gameOver,
+  });
 
   final CombinationResult combination;
   final ScoreBreakdown breakdown;
+  final bool stageCleared;
+  final bool shouldRefillHand;
+  final bool gameOver;
 }
 
 class RunContext {
@@ -113,6 +122,9 @@ class RunContext {
     }
 
     final removedTiles = _removeHandTiles(handIndices);
+    final heldHand = player.hand
+        .where((t) => !selectedTiles.contains(t))
+        .toList();
     final breakdown = _scoreCalculator.calculate(
       combo: combination,
       anomalies: player.anomalies,
@@ -121,6 +133,12 @@ class RunContext {
         setsPlayedBefore: player.setsPlayed,
         runsPlayedBefore: player.runsPlayed,
         discardsUsedThisStage: 3 - player.discardsLeft,
+        discardsRemaining: player.discardsLeft,
+        cardsRemainingInDeck: _drawPile.length,
+        ownedJesterCount: player.anomalies.length,
+        playedHandSize: selectedTiles.length,
+        heldHand: heldHand,
+        scoredTiles: selectedTiles,
       ),
     );
 
@@ -128,16 +146,22 @@ class RunContext {
     player.playsLeft -= 1;
     player.recordCombination(combination.type);
     _discardPile.addAll(removedTiles);
-    refillHand();
+    final stageCleared = stage!.isCleared;
 
-    if (stage!.isCleared) {
+    final gameOver = !stageCleared && player.playsLeft <= 0;
+    final shouldRefillHand = !stageCleared && !gameOver;
+
+    if (stageCleared) {
       _awardStageClearGold();
-      openShop();
-    } else if (player.playsLeft <= 0) {
-      phase = RunPhase.gameOver;
     }
 
-    return SubmitResult(combination: combination, breakdown: breakdown);
+    return SubmitResult(
+      combination: combination,
+      breakdown: breakdown,
+      stageCleared: stageCleared,
+      shouldRefillHand: shouldRefillHand,
+      gameOver: gameOver,
+    );
   }
 
   List<Tile> discardSelection(List<int> handIndices) {
@@ -179,6 +203,35 @@ class RunContext {
       ..generateOffers(ownedAnomalies: player.anomalies);
   }
 
+  void finalizeClearedStageToShop() {
+    final currentStage = stage;
+    if (currentStage == null || !currentStage.isCleared) {
+      throw StateError('Stage is not cleared');
+    }
+    if (player.hand.isNotEmpty) {
+      _discardPile.addAll(player.hand);
+      player.hand.clear();
+    }
+    openShop();
+  }
+
+  void finalizeSubmitContinuation({
+    required SubmitResult result,
+    int targetHandSize = 8,
+  }) {
+    if (result.stageCleared) {
+      finalizeClearedStageToShop();
+      return;
+    }
+    if (result.gameOver) {
+      phase = RunPhase.gameOver;
+      return;
+    }
+    if (result.shouldRefillHand) {
+      refillHand(targetHandSize);
+    }
+  }
+
   void rerollShop() {
     final currentShop = shop;
     if (phase != RunPhase.shop || currentShop == null) {
@@ -196,6 +249,8 @@ class RunContext {
     );
   }
 
+  static const int maxJesterSlots = 5;
+
   void buyAnomaly({required int offerIndex, int? replaceIndex}) {
     final currentShop = shop;
     if (phase != RunPhase.shop || currentShop == null) {
@@ -210,7 +265,7 @@ class RunContext {
       throw StateError('Not enough gold to buy anomaly');
     }
 
-    if (player.anomalies.length >= 3) {
+    if (player.anomalies.length >= maxJesterSlots) {
       if (replaceIndex == null) {
         throw StateError(
           'Replacement index required when anomaly slots are full',

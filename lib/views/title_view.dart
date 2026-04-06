@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -53,18 +54,9 @@ class TitleView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppConfig.gameSubtitle,
-                    style: TextStyle(
-                      fontFamily: AssetPaths.fontAngduIpsul140,
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                  ),
                   const Spacer(flex: 3),
                   _RoundButton(
-                    label: '게임 시작',
+                    label: context.tr('startGame'),
                     color: const Color(0xFF3CAEE0),
                     onPressed: () {
                       SoundManager.playSfx(AssetPaths.sfxBtnSnd);
@@ -73,7 +65,7 @@ class TitleView extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _RoundButton(
-                    label: '설정',
+                    label: context.tr('settings'),
                     color: const Color(0xFF7E57C2),
                     onPressed: () {
                       SoundManager.playSfx(AssetPaths.sfxBtnSnd);

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -48,7 +49,7 @@ class _SettingViewState extends State<SettingView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('설정'),
+        title: Text(context.tr('settings')),
         titleTextStyle: const TextStyle(
           fontFamily: AssetPaths.fontAngduIpsul140,
           fontSize: 22,
@@ -57,9 +58,9 @@ class _SettingViewState extends State<SettingView> {
       ),
       body: ListView(
         children: [
-          const _SectionTitle(title: '화면'),
+          _SectionTitle(title: context.tr('sectionScreen')),
           _MuteSwitch(
-            label: '화면 꺼짐 방지',
+            label: context.tr('keepScreenOn'),
             value: _keepScreenOn,
             onChanged: (v) {
               setState(() {
@@ -69,9 +70,9 @@ class _SettingViewState extends State<SettingView> {
               });
             },
           ),
-          const _SectionTitle(title: '사운드'),
+          _SectionTitle(title: context.tr('sectionSound')),
           _VolumeSlider(
-            label: 'BGM 볼륨',
+            label: context.tr('bgmVolume'),
             value: _bgmVolume,
             enabled: !_bgmMuted,
             onChanged: (v) {
@@ -83,7 +84,7 @@ class _SettingViewState extends State<SettingView> {
             },
           ),
           _MuteSwitch(
-            label: 'BGM 음소거',
+            label: context.tr('bgmMute'),
             value: _bgmMuted,
             onChanged: (v) {
               setState(() {
@@ -98,7 +99,7 @@ class _SettingViewState extends State<SettingView> {
             },
           ),
           _VolumeSlider(
-            label: '효과음 볼륨',
+            label: context.tr('sfxVolume'),
             value: _sfxVolume,
             enabled: !_sfxMuted,
             onChanged: (v) {
@@ -109,7 +110,7 @@ class _SettingViewState extends State<SettingView> {
             },
           ),
           _MuteSwitch(
-            label: '효과음 음소거',
+            label: context.tr('sfxMute'),
             value: _sfxMuted,
             onChanged: (v) {
               setState(() {

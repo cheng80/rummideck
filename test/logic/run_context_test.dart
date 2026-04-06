@@ -23,7 +23,7 @@ void main() {
       expect(context.phase, RunPhase.stage);
     });
 
-    test('triple 제출 시 점수 반영, 플레이 차감, 손패 보충이 일어난다', () {
+    test('triple 제출 시 점수 반영 후 후속 보충 전 상태를 유지한다', () {
       final context = RunContext(
         seedText: 'TRIPLE-TEST',
         drawPile: [
@@ -49,8 +49,12 @@ void main() {
       expect(result.breakdown.finalScore, 34);
       expect(context.stage?.currentScore, 34);
       expect(context.player.playsLeft, 4);
-      expect(context.player.hand, hasLength(8));
+      expect(context.player.hand, hasLength(5));
       expect(context.discardPile, hasLength(3));
+
+      context.finalizeSubmitContinuation(result: result);
+
+      expect(context.player.hand, hasLength(8));
     });
 
     test('타일 버리기 시 버리기 자원 차감과 손패 보충이 일어난다', () {
@@ -94,8 +98,13 @@ void main() {
       expect(result.breakdown.finalScore, 12);
       expect(context.stage?.currentScore, 12);
       expect(context.player.playsLeft, 4);
+      expect(context.player.hand, hasLength(6));
       expect(context.player.combinationCountFor(CombinationType.pair), 1);
       expect(context.player.combinationLevelFor(CombinationType.pair), 1);
+
+      context.finalizeSubmitContinuation(result: result);
+
+      expect(context.player.hand, hasLength(8));
     });
 
     test('기본 straight는 점수 누적에 사용된다', () {
@@ -124,9 +133,14 @@ void main() {
       expect(result.breakdown.finalScore, 41);
       expect(context.stage?.currentScore, 61);
       expect(context.phase, RunPhase.stage);
+      expect(context.player.hand, hasLength(3));
+
+      context.finalizeSubmitContinuation(result: result);
+
+      expect(context.player.hand, hasLength(8));
     });
 
-    test('충분한 고점 조합으로 클리어 시 shop 단계로 전환된다', () {
+    test('충분한 고점 조합으로 클리어 시 상점 전환 전 대기 상태를 거친다', () {
       final context = RunContext(
         seedText: 'CLEAR-HIGH-TEST',
         drawPile: [
@@ -151,8 +165,13 @@ void main() {
       expect(result.combination.type, CombinationType.straightFlush);
       expect(result.breakdown.finalScore, 80);
       expect(context.isStageCleared, isTrue);
-      expect(context.phase, RunPhase.shop);
+      expect(context.phase, RunPhase.stage);
       expect(context.player.gold, 30);
+      expect(context.currentShopOffers, isEmpty);
+
+      context.finalizeClearedStageToShop();
+
+      expect(context.phase, RunPhase.shop);
       expect(context.currentShopOffers, isNotEmpty);
     });
 
@@ -185,13 +204,15 @@ void main() {
       );
 
       context.startStage(4);
-      context.submitSelection([0, 1, 2]);
-      context.submitSelection([0, 1, 2]);
-      context.submitSelection([0, 1, 2]);
-      context.submitSelection([0, 1, 2]);
-      context.submitSelection([0, 1, 2]);
+      context.finalizeSubmitContinuation(result: context.submitSelection([0, 1, 2]));
+      context.finalizeSubmitContinuation(result: context.submitSelection([0, 1, 2]));
+      context.finalizeSubmitContinuation(result: context.submitSelection([0, 1, 2]));
+      context.finalizeSubmitContinuation(result: context.submitSelection([0, 1, 2]));
 
+      final last = context.submitSelection([0, 1, 2]);
       expect(context.stage?.currentScore, lessThan(context.stage!.targetScore));
+      expect(context.phase, RunPhase.stage);
+      context.finalizeSubmitContinuation(result: last);
       expect(context.phase, RunPhase.gameOver);
       expect(context.isStageFailed, isTrue);
     });
@@ -220,6 +241,7 @@ void main() {
       context.stage!.currentScore = 20;
       context.player.gold = 20;
       context.submitSelection([0, 1, 2, 3, 4]);
+      context.finalizeClearedStageToShop();
 
       final firstOffer = context.currentShopOffers.first;
       final goldAfterClear = context.player.gold;
@@ -248,6 +270,10 @@ void main() {
           StraightBoostAnomaly(),
           SmallEngineAnomaly(),
           RunEngineAnomaly(),
+          SetEngineAnomaly(),
+          SplitBoostAnomaly(),
+          LongRunAmplifierAnomaly(),
+          ColorFocusAnomaly(),
         ],
       );
 
@@ -255,25 +281,28 @@ void main() {
         TripleBoostAnomaly(),
         StraightBoostAnomaly(),
         SmallEngineAnomaly(),
+        SetEngineAnomaly(),
+        SplitBoostAnomaly(),
       ]);
       context.startStage(1);
       context.stage!.currentScore = 20;
-      context.player.gold = 20;
+      context.player.gold = 50;
       context.submitSelection([0, 1, 2, 3, 4]);
+      context.finalizeClearedStageToShop();
 
       final targetOffer = context.currentShopOffers.firstWhere(
-        (offer) => offer.anomaly.id == 'run_engine',
+        (offer) => !context.player.anomalies
+            .map((a) => a.id)
+            .contains(offer.anomaly.id),
       );
+      final targetId = targetOffer.anomaly.id;
       context.buyAnomaly(
         offerIndex: context.currentShopOffers.indexOf(targetOffer),
         replaceIndex: 1,
       );
 
-      expect(context.player.anomalies.map((anomaly) => anomaly.id), [
-        'triple_boost',
-        'run_engine',
-        'small_engine',
-      ]);
+      expect(context.player.anomalies, hasLength(5));
+      expect(context.player.anomalies[1].id, targetId);
     });
 
     test('상점에서 리롤 시 비용을 소모하고 다음 리롤 비용이 증가한다', () {
@@ -296,6 +325,7 @@ void main() {
       context.stage!.currentScore = 20;
       context.player.gold = 20;
       context.submitSelection([0, 1, 2, 3, 4]);
+      context.finalizeClearedStageToShop();
 
       final before = context.currentShopOffers
           .map((offer) => offer.anomaly.id)
@@ -331,6 +361,7 @@ void main() {
       context.startStage(5);
       context.stage!.currentScore = 600;
       context.submitSelection([0, 1, 2, 3, 4]);
+      context.finalizeClearedStageToShop();
 
       expect(context.phase, RunPhase.shop);
 

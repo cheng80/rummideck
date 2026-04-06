@@ -5,7 +5,7 @@ import 'package:rummideck/logic/models/tile.dart';
 void main() {
   group('GameSessionController', () {
     test('초기 세션은 seed와 시작 로그를 가진다', () {
-      final controller = GameSessionController(seedText: 'MVP-001');
+      final controller = GameSessionController(seedText: 'MVP-001', loadFromAsset: false);
 
       expect(controller.run.seedText, 'MVP-001');
       expect(controller.logs.first.message, '새 런 시작');
@@ -15,7 +15,7 @@ void main() {
     });
 
     test('버리기 후 로그가 추가된다', () {
-      final controller = GameSessionController(seedText: 'SUBMIT-TEST');
+      final controller = GameSessionController(seedText: 'SUBMIT-TEST', loadFromAsset: false);
 
       controller.toggleTileSelection(0);
       controller.toggleTileSelection(1);
@@ -25,7 +25,7 @@ void main() {
     });
 
     test('재시작 시 같은 seed로 1스테이지부터 다시 시작한다', () {
-      final controller = GameSessionController(seedText: 'RESET-TEST');
+      final controller = GameSessionController(seedText: 'RESET-TEST', loadFromAsset: false);
 
       controller.restartRun();
 
@@ -35,7 +35,7 @@ void main() {
     });
 
     test('초기 세션은 52장 기준 덱 잔량을 가진다', () {
-      final controller = GameSessionController(seedText: 'DECK-COUNT-TEST');
+      final controller = GameSessionController(seedText: 'DECK-COUNT-TEST', loadFromAsset: false);
 
       expect(controller.totalDeckSize, 52);
       expect(controller.run.player.hand, hasLength(8));
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('랭크 정렬은 숫자 우선, 같으면 색상 순으로 정렬한다', () {
-      final controller = GameSessionController(seedText: 'SORT-RANK-TEST');
+      final controller = GameSessionController(seedText: 'SORT-RANK-TEST', loadFromAsset: false);
       controller.run.player.hand
         ..clear()
         ..addAll(const [
@@ -64,7 +64,7 @@ void main() {
     });
 
     test('수트 정렬은 색상 우선, 같으면 숫자 순으로 정렬한다', () {
-      final controller = GameSessionController(seedText: 'SORT-SUIT-TEST');
+      final controller = GameSessionController(seedText: 'SORT-SUIT-TEST', loadFromAsset: false);
       controller.run.player.hand
         ..clear()
         ..addAll(const [
@@ -87,7 +87,7 @@ void main() {
     });
 
     test('버리기 후에도 현재 정렬 모드가 자동 재적용된다', () {
-      final controller = GameSessionController(seedText: 'AUTO-SORT-SUIT-TEST');
+      final controller = GameSessionController(seedText: 'AUTO-SORT-SUIT-TEST', loadFromAsset: false);
 
       controller.sortHandBySuit();
       controller.toggleTileSelection(0);
@@ -99,7 +99,7 @@ void main() {
     });
 
     test('재시작하면 기본 랭크 정렬로 다시 시작한다', () {
-      final controller = GameSessionController(seedText: 'RESET-SORT-TEST');
+      final controller = GameSessionController(seedText: 'RESET-SORT-TEST', loadFromAsset: false);
 
       controller.sortHandBySuit();
       controller.restartRun();
@@ -109,7 +109,7 @@ void main() {
     });
 
     test('선택 타일은 최대 5장까지만 허용된다', () {
-      final controller = GameSessionController(seedText: 'MAX-SELECT-TEST');
+      final controller = GameSessionController(seedText: 'MAX-SELECT-TEST', loadFromAsset: false);
 
       for (var index = 0; index < 5; index++) {
         controller.toggleTileSelection(index);

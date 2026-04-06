@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../app_config.dart';
 import '../game/game_session_controller.dart';
 import '../game/sample_game.dart';
+import '../logic/jester/jester_anomaly.dart';
 import '../logic/models/combination.dart';
 import '../logic/models/tile.dart';
 import '../resources/asset_paths.dart';
@@ -81,6 +82,15 @@ class _GameViewState extends State<GameView> {
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
+                  if (!_controller.isCatalogLoaded) {
+                    return SizedBox(
+                      width: frameWidth,
+                      height: frameHeight,
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white54),
+                      ),
+                    );
+                  }
                   return SizedBox(
                     width: frameWidth,
                     height: frameHeight,
@@ -552,7 +562,7 @@ class _StageStatusStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stage = controller.run.stage!;
+    final displayedRoundScore = controller.displayedRoundScore;
     return SizedBox(
       height: 32,
       child: Row(
@@ -560,7 +570,7 @@ class _StageStatusStrip extends StatelessWidget {
           Expanded(
             child: _StatusBadge(
               label: 'Round score',
-              value: _compactNumber(stage.currentScore),
+              value: _compactNumber(displayedRoundScore),
               valueColor: Colors.white,
               alignment: CrossAxisAlignment.start,
             ),
@@ -790,8 +800,10 @@ class _CompactMetaPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final combo = controller.previewCombination;
-    final score = controller.previewScore;
-    final comboLabel = controller.comboLabel(combo?.type);
+    final score = controller.scoreResolution?.breakdown ?? controller.previewScore;
+    final comboLabel =
+        controller.scoreResolution?.comboLabel ??
+        controller.comboLabel(combo?.type);
     return _RailPanel(
       color: const Color(0xFF181F24),
       child: Column(
@@ -1049,7 +1061,7 @@ class _JesterSlotCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     anomaly.name,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: const Color(0xFF2A2519),
@@ -1057,6 +1069,17 @@ class _JesterSlotCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (_effectLabel(anomaly) != null)
+                    Text(
+                      _effectLabel(anomaly)!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFF5F3C0C).withValues(alpha: 0.7),
+                        fontSize: compact ? 7 : 8,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               )
             : Column(
@@ -1107,6 +1130,13 @@ class _JesterSlotCard extends StatelessWidget {
       _ => 'JESTER',
     };
   }
+
+  String? _effectLabel(dynamic anomaly) {
+    if (anomaly is JesterAnomaly) {
+      return anomaly.effectText;
+    }
+    return null;
+  }
 }
 
 class _BattleCenterPanel extends StatelessWidget {
@@ -1120,14 +1150,20 @@ class _BattleCenterPanel extends StatelessWidget {
     final selectedTiles = indices
         .map((index) => controller.run.player.hand[index])
         .toList();
+    final submittedTiles = controller.submittedTiles;
     final combo = controller.previewCombination;
     final score = controller.previewScore;
+    final resolution = controller.scoreResolution;
     final lastLogs = controller.logs.take(2).toList();
+    final boardTiles =
+        resolution != null && submittedTiles.isNotEmpty ? submittedTiles : selectedTiles;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxHeight < 310;
+        final headerHeight = compact ? 44.0 : 52.0;
         final reserveBottom = compact ? 72.0 : 92.0;
+        final displayedScore = resolution?.breakdown ?? score;
         return DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0x552C7A66),
@@ -1141,28 +1177,34 @@ class _BattleCenterPanel extends StatelessWidget {
               16,
               compact ? 10 : 14,
             ),
-            child: Column(
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _BoardInfoBadge(
-                        label: 'Combination',
-                        value: controller.comboLabel(combo?.type),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _BoardInfoBadge(
+                          label: 'Combination',
+                          value: resolution?.comboLabel ??
+                              controller.comboLabel(combo?.type),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _BoardInfoBadge(
-                        label: 'Projected',
-                        value: '${score?.finalScore ?? 0}',
-                        valueColor: const Color(0xFFFFF17C),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _BoardInfoBadge(
+                          label: 'Projected',
+                          value: '${displayedScore?.finalScore ?? 0}',
+                          valueColor: const Color(0xFFFFF17C),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                SizedBox(height: compact ? 8 : 14),
-                Expanded(
+                Positioned.fill(
+                  top: headerHeight + (compact ? 6 : 10),
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -1184,20 +1226,11 @@ class _BattleCenterPanel extends StatelessWidget {
                         child: Padding(
                           padding: EdgeInsets.only(bottom: reserveBottom),
                           child: Center(
-                            child: selectedTiles.isEmpty
+                            child: boardTiles.isEmpty
                                 ? _CenterHint(compact: compact)
-                                : Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    alignment: WrapAlignment.center,
-                                    children: [
-                                      for (final tile in selectedTiles)
-                                        _BattleTileCard(
-                                          tile: tile,
-                                          width: 48,
-                                          lifted: true,
-                                        ),
-                                    ],
+                                : _PlayedTilesStage(
+                                    tiles: boardTiles,
+                                    resolution: resolution,
                                   ),
                           ),
                         ),
@@ -1213,8 +1246,8 @@ class _BattleCenterPanel extends StatelessWidget {
                                 children: [
                                   Expanded(child: _LogTape(logs: lastLogs)),
                                   const SizedBox(width: 12),
-                                  if (score != null)
-                                    _BreakdownBadge(score: score),
+                                  if (displayedScore != null)
+                                    _BreakdownBadge(score: displayedScore),
                                 ],
                               ),
                       ),
@@ -1226,6 +1259,335 @@ class _BattleCenterPanel extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PlayedTilesStage extends StatefulWidget {
+  const _PlayedTilesStage({
+    required this.tiles,
+    required this.resolution,
+  });
+
+  final List<Tile> tiles;
+  final ScoreResolutionState? resolution;
+
+  @override
+  State<_PlayedTilesStage> createState() => _PlayedTilesStageState();
+}
+
+class _PlayedTilesStageState extends State<_PlayedTilesStage> {
+  Timer? _timer;
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _restartSequence();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlayedTilesStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.resolution?.phase != widget.resolution?.phase ||
+        !_sameTiles(oldWidget.tiles, widget.tiles)) {
+      _restartSequence();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  bool _sameTiles(List<Tile> left, List<Tile> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var i = 0; i < left.length; i++) {
+      if (left[i] != right[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _restartSequence() {
+    _timer?.cancel();
+    final resolution = widget.resolution;
+    if (resolution == null ||
+        resolution.phase == ScoreResolutionPhase.finalScore ||
+        widget.tiles.isEmpty) {
+      setState(() {
+        _activeIndex = -1;
+      });
+      return;
+    }
+
+    setState(() {
+      _activeIndex = 0;
+    });
+
+    if (widget.tiles.length <= 1) {
+      return;
+    }
+
+    _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final next = _activeIndex + 1;
+      if (next >= widget.tiles.length) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _activeIndex = next;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PlayedTilesOverlay(
+      tiles: widget.tiles,
+      resolution: widget.resolution,
+      activeIndex: _activeIndex,
+    );
+  }
+}
+
+class _PlayedTilesOverlay extends StatelessWidget {
+  const _PlayedTilesOverlay({
+    required this.tiles,
+    required this.resolution,
+    required this.activeIndex,
+  });
+
+  final List<Tile> tiles;
+  final ScoreResolutionState? resolution;
+  final int activeIndex;
+
+  static const double _tileWidth = 48;
+  static const double _spacing = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final hasResolution = resolution != null;
+    final totalWidth =
+        (_tileWidth * tiles.length) + (_spacing * (tiles.length - 1));
+    final totalHeight = _tileWidth * 1.28;
+    final frameColor = _frameColor();
+    final popupText = _popupText();
+
+    return SizedBox(
+      width: totalWidth,
+      height: totalHeight + 28,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < tiles.length; index++) ...[
+                if (index > 0) const SizedBox(width: _spacing),
+                index == 0
+                    ? _DebugMeasuredTile(
+                        label: hasResolution
+                            ? 'score_first_tile_${resolution!.phase.name}'
+                            : 'selected_first_tile',
+                        child: _BattleTileCard(
+                          tile: tiles[index],
+                          width: _tileWidth,
+                          lifted: true,
+                        ),
+                      )
+                    : _BattleTileCard(
+                        tile: tiles[index],
+                        width: _tileWidth,
+                        lifted: true,
+                      ),
+              ],
+            ],
+          ),
+          if (hasResolution &&
+              resolution!.phase != ScoreResolutionPhase.finalScore &&
+              activeIndex >= 0)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              left: (activeIndex * (_tileWidth + _spacing)) - 6,
+              top: -6,
+              child: IgnorePointer(
+                child: Container(
+                  width: _tileWidth + 12,
+                  height: (_tileWidth * 1.28) + 12,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: frameColor, width: 3),
+                    color: frameColor.withValues(alpha: 0.08),
+                  ),
+                ),
+              ),
+            ),
+          if (hasResolution &&
+              resolution!.phase != ScoreResolutionPhase.finalScore &&
+              activeIndex >= 0)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              left: (activeIndex * (_tileWidth + _spacing)) - 2,
+              top: -52,
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey<String>(
+                  '${resolution!.phase.name}_${activeIndex}_$popupText',
+                ),
+                tween: Tween<double>(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.linear,
+                builder: (context, value, child) {
+                  final fadeSlice = 0.2 / 0.7;
+                  final opacity = value < fadeSlice
+                      ? value / fadeSlice
+                      : value > (1 - fadeSlice)
+                      ? (1 - value) / fadeSlice
+                      : 1.0;
+                  final scale = value < fadeSlice
+                      ? 0.96 + (value / fadeSlice) * 0.08
+                      : 1.04;
+                  final translateY = -(value * 18);
+
+                  return Opacity(
+                    opacity: opacity.clamp(0.0, 1.0),
+                    child: Transform.translate(
+                      offset: Offset(0, translateY),
+                      child: Transform.scale(scale: scale, child: child),
+                    ),
+                  );
+                },
+                child: Text(
+                  popupText,
+                  style: TextStyle(
+                    color: frameColor,
+                    fontSize: _tileWidth * 0.76,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                    shadows: const [
+                      Shadow(color: Colors.black87, blurRadius: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (hasResolution && resolution!.phase == ScoreResolutionPhase.finalScore)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.center,
+                child: Text(
+                  '+${resolution!.breakdown.finalScore}',
+                  style: const TextStyle(
+                    color: Color(0xFFFFF17C),
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                    shadows: [
+                      Shadow(color: Colors.black87, blurRadius: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _frameColor() {
+    if (resolution == null) {
+      return Colors.transparent;
+    }
+    return switch (resolution!.phase) {
+      ScoreResolutionPhase.chips => const Color(0xFF35A1FF),
+      ScoreResolutionPhase.mult => const Color(0xFFFF6B61),
+      ScoreResolutionPhase.finalScore => const Color(0xFFFFF17C),
+    };
+  }
+
+  String _popupText() {
+    if (resolution == null) {
+      return '';
+    }
+    return switch (resolution!.phase) {
+      ScoreResolutionPhase.chips =>
+        '+${tiles[activeIndex.clamp(0, tiles.length - 1)].number}',
+      ScoreResolutionPhase.mult => 'x${resolution!.breakdown.mult}',
+      ScoreResolutionPhase.finalScore => '',
+    };
+  }
+}
+
+class _DebugMeasuredTile extends StatefulWidget {
+  const _DebugMeasuredTile({
+    required this.label,
+    required this.child,
+  });
+
+  final String label;
+  final Widget child;
+
+  @override
+  State<_DebugMeasuredTile> createState() => _DebugMeasuredTileState();
+}
+
+class _DebugMeasuredTileState extends State<_DebugMeasuredTile> {
+  final GlobalKey _measureKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _logAfterFrame();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DebugMeasuredTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _logAfterFrame();
+  }
+
+  void _logAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final context = _measureKey.currentContext;
+      if (context == null) {
+        return;
+      }
+      final renderBox = context.findRenderObject();
+      if (renderBox is! RenderBox || !renderBox.hasSize) {
+        return;
+      }
+      final offset = renderBox.localToGlobal(Offset.zero);
+      debugPrint(
+        '[tile-log] ${widget.label} x=${offset.dx.toStringAsFixed(1)} '
+        'y=${offset.dy.toStringAsFixed(1)} '
+        'w=${renderBox.size.width.toStringAsFixed(1)} '
+        'h=${renderBox.size.height.toStringAsFixed(1)}',
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: _measureKey,
+      child: widget.child,
     );
   }
 }
@@ -1293,28 +1655,33 @@ class _FanHandZone extends StatefulWidget {
 }
 
 class _FanHandZoneState extends State<_FanHandZone> {
-  static const double _deckLaneWidth = 72;
-  static const Duration _drawFlightDuration = Duration(milliseconds: 360);
+  static const Duration _drawFlightDuration = Duration(milliseconds: 340);
 
   final List<_DrawFlight> _flights = <_DrawFlight>[];
+  List<Tile?> _visibleSlots = <Tile?>[];
+  List<Tile>? _pendingFinalHand;
   int _nextFlightId = 0;
-  int? _previousDrawPileCount;
+  Size? _lastHandZoneSize;
 
   @override
   void initState() {
     super.initState();
-    _previousDrawPileCount = widget.controller.drawPileCount;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      final initialHandCount = widget.controller.run.player.hand.length;
-      if (initialHandCount > 0) {
-        _spawnDrawFlights(
-          drawnCount: initialHandCount,
-          handCount: initialHandCount,
-        );
+      _transitionToHand(List<Tile>.from(widget.controller.run.player.hand));
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _FanHandZone oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
       }
+      _syncToActualHand();
     });
   }
 
@@ -1324,408 +1691,161 @@ class _FanHandZoneState extends State<_FanHandZone> {
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant _FanHandZone oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final currentDrawPileCount = widget.controller.drawPileCount;
-    final previousDrawPileCount = _previousDrawPileCount;
-    if (previousDrawPileCount != null && currentDrawPileCount < previousDrawPileCount) {
-      _spawnDrawFlights(
-        drawnCount: previousDrawPileCount - currentDrawPileCount,
-        handCount: widget.controller.run.player.hand.length,
-      );
+  void _syncToActualHand() {
+    final actual = List<Tile>.from(widget.controller.run.player.hand);
+    final baseline = _pendingFinalHand ?? _visibleSlots.whereType<Tile>().toList();
+    if (_sameHand(baseline, actual)) {
+      return;
     }
-    _previousDrawPileCount = currentDrawPileCount;
+    if (_flights.isNotEmpty) {
+      _pendingFinalHand = actual;
+      return;
+    }
+    _transitionToHand(actual);
   }
 
-  void _spawnDrawFlights({
-    required int drawnCount,
-    required int handCount,
-  }) {
-    if (drawnCount <= 0 || handCount <= 0) {
+  void _transitionToHand(List<Tile> actualHand) {
+    final handZoneSize = _lastHandZoneSize;
+    if (actualHand.isEmpty) {
+      setState(() {
+        _visibleSlots = <Tile?>[];
+        _pendingFinalHand = null;
+        _flights.clear();
+      });
+      _setInteractionLockDeferred(false);
       return;
     }
 
-    widget.controller.setInteractionLocked(true);
-    final startIndex = (handCount - drawnCount).clamp(0, handCount);
-    for (var offset = 0; offset < drawnCount; offset++) {
-      final slotIndex = (startIndex + offset).clamp(0, handCount - 1);
-      final flight = _DrawFlight(
-        id: _nextFlightId++,
-        targetSlot: slotIndex,
-        totalHandCount: handCount,
-        delay: Duration(milliseconds: offset * 55),
-      );
+    final existingCodes = _visibleSlots.whereType<Tile>().map((tile) => tile.code).toSet();
+    final incomingEntries = <MapEntry<int, Tile>>[];
+    for (var index = 0; index < actualHand.length; index++) {
+      final tile = actualHand[index];
+      if (!existingCodes.contains(tile.code)) {
+        incomingEntries.add(MapEntry(index, tile));
+      }
+    }
+
+    final nextVisibleSlots = <Tile?>[
+      for (final tile in actualHand)
+        existingCodes.contains(tile.code) ? tile : null,
+    ];
+
+    if (incomingEntries.isEmpty) {
       setState(() {
-        _flights.add(flight);
+        _visibleSlots = nextVisibleSlots;
+        _pendingFinalHand = null;
       });
+      return;
+    }
+
+    if (handZoneSize == null) {
+      setState(() {
+        _visibleSlots = actualHand.map<Tile?>((tile) => tile).toList();
+        _pendingFinalHand = null;
+        _flights.clear();
+      });
+      _setInteractionLockDeferred(false);
+      return;
+    }
+
+    final targetLayouts = _buildAllHandSlotLayouts(
+      count: actualHand.length,
+      zoneSize: handZoneSize,
+    );
+
+    setState(() {
+      _visibleSlots = nextVisibleSlots;
+      _pendingFinalHand = actualHand;
+      _flights
+        ..clear()
+        ..addAll(
+          [
+            for (var order = 0; order < incomingEntries.length; order++)
+              _DrawFlight(
+                id: _nextFlightId++,
+                tile: incomingEntries[order].value,
+                targetSlot: incomingEntries[order].key,
+                targetLayout: targetLayouts[incomingEntries[order].key],
+                delay: Duration(milliseconds: order * 55),
+              ),
+          ],
+        );
+    });
+
+    _setInteractionLockDeferred(true);
+    final lastDelay = incomingEntries.length <= 1
+        ? Duration.zero
+        : Duration(milliseconds: (incomingEntries.length - 1) * 55);
+    for (final flight in _flights) {
       unawaited(
         Future<void>.delayed(
-          flight.delay + _drawFlightDuration + const Duration(milliseconds: 120),
-          () {
-            if (!mounted) {
-              return;
-            }
-            setState(() {
-              _flights.removeWhere((entry) => entry.id == flight.id);
-            });
-            if (_flights.isEmpty) {
-              widget.controller.setInteractionLocked(false);
-            }
-          },
+          flight.delay + _drawFlightDuration + const Duration(milliseconds: 40),
+          () => _completeFlight(flight),
         ),
       );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hand = widget.controller.run.player.hand;
-    final selected = widget.controller.selectedIndices.toSet();
-    final selectionFull = widget.controller.isSelectionFull;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0x33000000),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final count = hand.length;
-          if (count == 0) {
-            return const SizedBox.shrink();
+    unawaited(
+      Future<void>.delayed(
+        lastDelay + _drawFlightDuration + const Duration(milliseconds: 40),
+        () {
+          if (!mounted) {
+            return;
           }
-
-          final handWidth = (constraints.maxWidth - _deckLaneWidth).clamp(
-            0.0,
-            constraints.maxWidth,
-          );
-          final rows = count > 8 ? 2 : 1;
-          final rowOneCount = rows == 1 ? count : count.clamp(0, 8);
-          final rowTwoCount = rows == 1 ? 0 : count - rowOneCount;
-          final availableHeight = constraints.maxHeight - 28;
-          final rowHeight = rows == 1
-              ? availableHeight
-              : (availableHeight - 18) / 2;
-          final tileHeight = rowHeight.clamp(56.0, rows == 1 ? 92.0 : 74.0);
-          final cardWidth = (tileHeight * 0.52).clamp(
-            34.0,
-            rows == 1 ? 52.0 : 42.0,
-          );
-
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              if (rowOneCount > 0)
-                _HandRow(
-                  tiles: hand.take(rowOneCount).toList(),
-                  selectedIndices: selected,
-                  selectionFull: selectionFull,
-                  controller: widget.controller,
-                  cardWidth: cardWidth,
-                  top: rows == 1 ? 14 : 6,
-                  indexOffset: 0,
-                  availableWidth: handWidth,
-                ),
-              if (rowTwoCount > 0)
-                _HandRow(
-                  tiles: hand.skip(rowOneCount).take(rowTwoCount).toList(),
-                  selectedIndices: selected,
-                  selectionFull: selectionFull,
-                  controller: widget.controller,
-                  cardWidth: cardWidth,
-                  top: tileHeight + 18,
-                  indexOffset: rowOneCount,
-                  availableWidth: handWidth,
-                ),
-              Positioned(
-                right: 8,
-                top: rows == 1 ? 12 : 18,
-                bottom: 24,
-                width: _deckLaneWidth - 12,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: _DeckStackBadge(
-                    drawPileCount: widget.controller.drawPileCount,
-                    totalDeckSize: widget.controller.totalDeckSize,
-                    discardPileCount: widget.controller.discardPileCount,
-                  ),
-                ),
-              ),
-              for (final flight in _flights)
-                _DrawFlightCard(
-                  key: ValueKey<int>(flight.id),
-                  flight: flight,
-                  zoneSize: constraints.biggest,
-                  handWidth: handWidth,
-                  deckLaneWidth: _deckLaneWidth,
-                  duration: _drawFlightDuration,
-                ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Text(
-                  'Hand ${hand.length}/16',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: constraints.maxWidth < 380 ? 11 : 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _DrawFlight {
-  const _DrawFlight({
-    required this.id,
-    required this.targetSlot,
-    required this.totalHandCount,
-    required this.delay,
-  });
-
-  final int id;
-  final int targetSlot;
-  final int totalHandCount;
-  final Duration delay;
-}
-
-class _DeckStackBadge extends StatelessWidget {
-  const _DeckStackBadge({
-    required this.drawPileCount,
-    required this.totalDeckSize,
-    required this.discardPileCount,
-  });
-
-  final int drawPileCount;
-  final int totalDeckSize;
-  final int discardPileCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 48,
-          height: 72,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                left: 6,
-                top: 4,
-                child: _DeckBackCard(
-                  width: 40,
-                  tint: const Color(0x55FFFFFF),
-                ),
-              ),
-              Positioned(
-                left: 3,
-                top: 2,
-                child: _DeckBackCard(
-                  width: 40,
-                  tint: const Color(0x77FFFFFF),
-                ),
-              ),
-              const Positioned(
-                left: 0,
-                top: 0,
-                child: _DeckBackCard(width: 40),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '$drawPileCount/$totalDeckSize',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'D $discardPileCount',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.72),
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            height: 1,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DeckBackCard extends StatelessWidget {
-  const _DeckBackCard({required this.width, this.tint = Colors.white});
-
-  final double width;
-  final Color tint;
-
-  @override
-  Widget build(BuildContext context) {
-    final height = width * 1.38;
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF58B3FF).withValues(alpha: tint.a),
-            const Color(0xFF1E79DA).withValues(alpha: tint.a),
-          ],
-        ),
-        border: Border.all(color: const Color(0xFFF2F5FB), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Container(
-          width: width * 0.5,
-          height: width * 0.5,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawFlightCard extends StatelessWidget {
-  const _DrawFlightCard({
-    super.key,
-    required this.flight,
-    required this.zoneSize,
-    required this.handWidth,
-    required this.deckLaneWidth,
-    required this.duration,
-  });
-
-  final _DrawFlight flight;
-  final Size zoneSize;
-  final double handWidth;
-  final double deckLaneWidth;
-  final Duration duration;
-
-  @override
-  Widget build(BuildContext context) {
-    final target = _targetOffset();
-    final begin = Offset(
-      zoneSize.width - (deckLaneWidth * 0.7),
-      zoneSize.height * 0.52,
-    );
-    final totalDuration = flight.delay + duration;
-
-    return IgnorePointer(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0, end: 1),
-        duration: totalDuration,
-        curve: Curves.easeOutCubic,
-        onEnd: null,
-        builder: (context, value, child) {
-          final delayedValue =
-              ((value * totalDuration.inMilliseconds) - flight.delay.inMilliseconds) /
-                  duration.inMilliseconds;
-          final normalized = delayedValue.clamp(0.0, 1.0);
-          final progress = Curves.easeOutCubic.transform(normalized);
-          final current = Offset.lerp(begin, target, progress)!;
-          final liftArc = (1 - (progress - 0.5).abs() * 2) * 16;
-          return Positioned(
-            left: current.dx,
-            top: current.dy - liftArc,
-            child: Opacity(
-              opacity: (1 - (progress * 0.08)).clamp(0.0, 1.0),
-              child: Transform.rotate(
-                angle: (1 - progress) * -0.18,
-                child: const _DeckBackCard(width: 34),
-              ),
-            ),
-          );
+          setState(() {
+            _visibleSlots = (_pendingFinalHand ?? actualHand)
+                .map<Tile?>((tile) => tile)
+                .toList();
+            _pendingFinalHand = null;
+            _flights.clear();
+          });
+          _setInteractionLockDeferred(false);
+          _syncToActualHand();
         },
       ),
     );
   }
 
-  Offset _targetOffset() {
-    final totalCount = flight.totalHandCount;
-    final rows = totalCount > 8 ? 2 : 1;
-    final rowOneCount = rows == 1 ? totalCount : totalCount.clamp(0, 8);
-    final rowTwoCount = rows == 1 ? 0 : totalCount - rowOneCount;
-    final availableHeight = zoneSize.height - 28;
-    final rowHeight = rows == 1 ? availableHeight : (availableHeight - 18) / 2;
-    final tileHeight = rowHeight.clamp(56.0, rows == 1 ? 92.0 : 74.0);
-    final cardWidth = (tileHeight * 0.52).clamp(
-      34.0,
-      rows == 1 ? 52.0 : 42.0,
-    );
-    final isSecondRow = flight.targetSlot >= rowOneCount;
-    final rowCount = isSecondRow ? rowTwoCount : rowOneCount;
-    final localIndex = isSecondRow ? flight.targetSlot - rowOneCount : flight.targetSlot;
-    final top = isSecondRow ? tileHeight + 28 : (rows == 1 ? 24.0 : 16.0);
-
-    final totalNaturalWidth = cardWidth * rowCount;
-    final overlap = rowCount == 1
-        ? 0.0
-        : ((totalNaturalWidth - handWidth + 28) / (rowCount - 1)).clamp(
-            0.0,
-            cardWidth * 0.62,
-          );
-    final step = cardWidth - overlap;
-    final usedWidth = step * (rowCount - 1) + cardWidth;
-    final startX = (handWidth - usedWidth) / 2;
-
-    return Offset(startX + (step * localIndex), top + 10);
+  void _completeFlight(_DrawFlight flight) {
+    if (!mounted ||
+        _pendingFinalHand == null ||
+        flight.targetSlot >= _visibleSlots.length) {
+      return;
+    }
+    setState(() {
+      _visibleSlots[flight.targetSlot] = flight.tile;
+      _flights.removeWhere((entry) => entry.id == flight.id);
+    });
   }
-}
 
-class _HandRow extends StatelessWidget {
-  const _HandRow({
-    required this.tiles,
-    required this.selectedIndices,
-    required this.selectionFull,
-    required this.controller,
-    required this.cardWidth,
-    required this.top,
-    required this.indexOffset,
-    required this.availableWidth,
-  });
+  void _setInteractionLockDeferred(bool locked) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      widget.controller.setInteractionLocked(locked);
+    });
+  }
 
-  final List<Tile> tiles;
-  final Set<int> selectedIndices;
-  final bool selectionFull;
-  final GameSessionController controller;
-  final double cardWidth;
-  final double top;
-  final int indexOffset;
-  final double availableWidth;
+  bool _sameHand(List<Tile> left, List<Tile> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final count = tiles.length;
-    if (count == 0) {
-      return const SizedBox.shrink();
+  List<_HandSlotLayout> _buildHandSlotLayouts({
+    required int count,
+    required double cardWidth,
+    required double top,
+    required double availableWidth,
+  }) {
+    if (count <= 0) {
+      return const <_HandSlotLayout>[];
     }
 
     final totalNaturalWidth = cardWidth * count;
@@ -1739,33 +1859,48 @@ class _HandRow extends StatelessWidget {
     final usedWidth = step * (count - 1) + cardWidth;
     final startX = (availableWidth - usedWidth) / 2;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        for (var localIndex = 0; localIndex < count; localIndex++)
-          Positioned(
-            left: startX + (step * localIndex),
-            top:
-                top +
-                (selectedIndices.contains(indexOffset + localIndex) ? 0 : 10),
-            child: Transform.rotate(
-              angle: _fanAngle(localIndex, count),
-              child: GestureDetector(
-                onTap: () =>
-                    controller.toggleTileSelection(indexOffset + localIndex),
-                child: _BattleTileCard(
-                  tile: tiles[localIndex],
-                  width: cardWidth,
-                  lifted: selectedIndices.contains(indexOffset + localIndex),
-                  dimmed:
-                      selectionFull &&
-                      !selectedIndices.contains(indexOffset + localIndex),
-                ),
-              ),
-            ),
-          ),
-      ],
+    return List<_HandSlotLayout>.generate(
+      count,
+      (index) => _HandSlotLayout(
+        left: startX + (step * index),
+        top: top,
+        angle: _fanAngle(index, count),
+        width: cardWidth,
+      ),
     );
+  }
+
+  List<_HandSlotLayout> _buildAllHandSlotLayouts({
+    required int count,
+    required Size zoneSize,
+  }) {
+    final rows = count > 8 ? 2 : 1;
+    final rowOneCount = rows == 1 ? count : count.clamp(0, 8);
+    final rowTwoCount = rows == 1 ? 0 : count - rowOneCount;
+    final availableHeight = zoneSize.height - 28;
+    final rowHeight = rows == 1
+        ? availableHeight
+        : (availableHeight - 18) / 2;
+    final tileHeight = rowHeight.clamp(56.0, rows == 1 ? 92.0 : 74.0);
+    final cardWidth = (tileHeight * 0.52).clamp(
+      34.0,
+      rows == 1 ? 52.0 : 42.0,
+    );
+
+    return <_HandSlotLayout>[
+      ..._buildHandSlotLayouts(
+        count: rowOneCount,
+        cardWidth: cardWidth,
+        top: rows == 1 ? 14 : 6,
+        availableWidth: zoneSize.width,
+      ),
+      ..._buildHandSlotLayouts(
+        count: rowTwoCount,
+        cardWidth: cardWidth,
+        top: tileHeight + 18,
+        availableWidth: zoneSize.width,
+      ),
+    ];
   }
 
   double _fanAngle(int index, int count) {
@@ -1774,6 +1909,316 @@ class _HandRow extends StatelessWidget {
     }
     final mid = (count - 1) / 2;
     return ((index - mid) / count) * 0.24;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final actualHand = widget.controller.run.player.hand;
+    final visibleSlots = _visibleSlots;
+    final selected = widget.controller.selectedIndices.toSet();
+    final selectionFull = widget.controller.isSelectionFull;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0x33000000),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          _lastHandZoneSize = constraints.biggest;
+          if (actualHand.isEmpty && _flights.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          final handWidth = constraints.maxWidth;
+          final count = visibleSlots.length;
+          final rows = count > 8 ? 2 : 1;
+          final rowOneCount = rows == 1 ? count : count.clamp(0, 8);
+          final rowTwoCount = rows == 1 ? 0 : count - rowOneCount;
+          final availableHeight = constraints.maxHeight - 28;
+          final rowHeight = rows == 1
+              ? availableHeight
+              : (availableHeight - 18) / 2;
+          final tileHeight = rowHeight.clamp(56.0, rows == 1 ? 92.0 : 74.0);
+          final cardWidth = (tileHeight * 0.52).clamp(
+            34.0,
+            rows == 1 ? 52.0 : 42.0,
+          );
+          final rowOneLayouts = _buildHandSlotLayouts(
+            count: rowOneCount,
+            cardWidth: cardWidth,
+            top: rows == 1 ? 14 : 6,
+            availableWidth: handWidth,
+          );
+          final rowTwoLayouts = _buildHandSlotLayouts(
+            count: rowTwoCount,
+            cardWidth: cardWidth,
+            top: tileHeight + 18,
+            availableWidth: handWidth,
+          );
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              if (rowOneCount > 0)
+                _HandRow(
+                  tiles: visibleSlots.take(rowOneCount).toList(),
+                  selectedIndices: selected,
+                  selectionFull: selectionFull,
+                  controller: widget.controller,
+                  layouts: rowOneLayouts,
+                  indexOffset: 0,
+                  exiting: widget.controller.isHandExitAnimating,
+                ),
+              if (rowTwoCount > 0)
+                _HandRow(
+                  tiles: visibleSlots.skip(rowOneCount).take(rowTwoCount).toList(),
+                  selectedIndices: selected,
+                  selectionFull: selectionFull,
+                  controller: widget.controller,
+                  layouts: rowTwoLayouts,
+                  indexOffset: rowOneCount,
+                  exiting: widget.controller.isHandExitAnimating,
+                ),
+              for (final flight in _flights)
+                _DrawFlightCard(
+                  key: ValueKey<int>(flight.id),
+                  flight: flight,
+                  zoneSize: constraints.biggest,
+                  duration: _drawFlightDuration,
+                ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _HandFooterInfo(
+                  handCount: actualHand.length,
+                  drawPileCount: widget.controller.drawPileCount,
+                  totalDeckSize: widget.controller.totalDeckSize,
+                  discardPileCount: widget.controller.discardPileCount,
+                  compact: constraints.maxWidth < 380,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DrawFlight {
+  const _DrawFlight({
+    required this.id,
+    required this.tile,
+    required this.targetSlot,
+    required this.targetLayout,
+    required this.delay,
+  });
+
+  final int id;
+  final Tile tile;
+  final int targetSlot;
+  final _HandSlotLayout targetLayout;
+  final Duration delay;
+}
+
+class _HandSlotLayout {
+  const _HandSlotLayout({
+    required this.left,
+    required this.top,
+    required this.angle,
+    required this.width,
+  });
+
+  final double left;
+  final double top;
+  final double angle;
+  final double width;
+}
+
+class _HandFooterInfo extends StatelessWidget {
+  const _HandFooterInfo({
+    required this.handCount,
+    required this.drawPileCount,
+    required this.totalDeckSize,
+    required this.discardPileCount,
+    required this.compact,
+  });
+
+  final int handCount;
+  final int drawPileCount;
+  final int totalDeckSize;
+  final int discardPileCount;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.85),
+      fontSize: compact ? 10 : 12,
+      fontWeight: FontWeight.w800,
+      height: 1,
+    );
+    final secondaryStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.68),
+      fontSize: compact ? 9 : 11,
+      fontWeight: FontWeight.w700,
+      height: 1,
+    );
+
+    return Row(
+      children: [
+        Expanded(
+          child: Center(
+            child: Text(
+              'Discard $discardPileCount',
+              style: secondaryStyle,
+            ),
+          ),
+        ),
+        SizedBox(width: compact ? 10 : 12),
+        Expanded(
+          child: Center(
+            child: Text('Hand $handCount/16', style: labelStyle),
+          ),
+        ),
+        SizedBox(width: compact ? 10 : 12),
+        Expanded(
+          child: Center(
+            child: Text('Deck $drawPileCount/$totalDeckSize', style: labelStyle),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DrawFlightCard extends StatelessWidget {
+  const _DrawFlightCard({
+    super.key,
+    required this.flight,
+    required this.zoneSize,
+    required this.duration,
+  });
+
+  final _DrawFlight flight;
+  final Size zoneSize;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = Offset(
+      flight.targetLayout.left,
+      flight.targetLayout.top + 10,
+    );
+    final begin = Offset(zoneSize.width + 26, zoneSize.height * 0.54);
+    final totalDuration = flight.delay + duration;
+
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: totalDuration,
+        curve: Curves.linear,
+        builder: (context, value, child) {
+          final delayedValue =
+              ((value * totalDuration.inMilliseconds) -
+                      flight.delay.inMilliseconds) /
+                  duration.inMilliseconds;
+          final normalized = delayedValue.clamp(0.0, 1.0);
+          final progress = Curves.easeOutCubic.transform(normalized);
+          final current = Offset.lerp(begin, target, progress)!;
+          final liftArc = (1 - (progress - 0.5).abs() * 2) * 14;
+
+          return Stack(
+            children: [
+              Positioned(
+                left: current.dx,
+                top: current.dy - liftArc,
+                child: Opacity(
+                  opacity: normalized <= 0 ? 0 : 1,
+                  child: Transform.rotate(
+                    angle: (-0.14 * (1 - progress)) +
+                        (flight.targetLayout.angle * progress),
+                    child: _BattleTileCard(
+                      tile: flight.tile,
+                      width: flight.targetLayout.width,
+                      lifted: true,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+class _HandRow extends StatelessWidget {
+  const _HandRow({
+    required this.tiles,
+    required this.selectedIndices,
+    required this.selectionFull,
+    required this.controller,
+    required this.layouts,
+    required this.indexOffset,
+    required this.exiting,
+  });
+
+  final List<Tile?> tiles;
+  final Set<int> selectedIndices;
+  final bool selectionFull;
+  final GameSessionController controller;
+  final List<_HandSlotLayout> layouts;
+  final int indexOffset;
+  final bool exiting;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = tiles.length;
+    if (count == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        for (var localIndex = 0; localIndex < count; localIndex++)
+          if (tiles[localIndex] != null)
+            Positioned(
+              left: layouts[localIndex].left,
+              top:
+                  layouts[localIndex].top +
+                  (selectedIndices.contains(indexOffset + localIndex) ? 0 : 10),
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 380),
+                curve: Curves.easeInCubic,
+                offset: exiting ? const Offset(0, 1.5) : Offset.zero,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 280),
+                  opacity: exiting ? 0 : 1,
+                  child: Transform.rotate(
+                    angle: layouts[localIndex].angle,
+                    child: GestureDetector(
+                      onTap: () =>
+                          controller.toggleTileSelection(indexOffset + localIndex),
+                      child: _BattleTileCard(
+                        tile: tiles[localIndex]!,
+                        width: layouts[localIndex].width,
+                        lifted: selectedIndices.contains(indexOffset + localIndex),
+                        dimmed:
+                            selectionFull &&
+                            !selectedIndices.contains(indexOffset + localIndex),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+      ],
+    );
   }
 }
 

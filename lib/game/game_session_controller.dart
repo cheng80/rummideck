@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'dart:async';
 
 import '../logic/anomalies/anomaly.dart';
-import '../logic/anomalies/mvp_anomalies.dart';
 import '../logic/combination/combination_evaluator.dart';
 import '../logic/deck/standard_deck.dart';
+import '../logic/jester/jester_catalog.dart';
 import '../logic/models/combination.dart';
 import '../logic/models/tile.dart';
 import '../logic/random/seeded_rng.dart';
@@ -14,11 +16,39 @@ import '../logic/score/score_context.dart';
 
 enum HandSortMode { rank, suit }
 
+enum ScoreResolutionPhase { chips, mult, finalScore }
+
+class ScoreResolutionState {
+  const ScoreResolutionState({
+    required this.comboLabel,
+    required this.breakdown,
+    required this.tiles,
+    required this.phase,
+  });
+
+  final String comboLabel;
+  final ScoreBreakdown breakdown;
+  final List<Tile> tiles;
+  final ScoreResolutionPhase phase;
+}
+
 class GameSessionController extends ChangeNotifier {
   static const int maxSelectableTiles = 5;
+  static const int maxJesterSlots = 5;
+  static const String _jesterAssetPath = 'data/common/jesters_common.json';
 
-  GameSessionController({required this.seedText}) {
-    _startNewRun(seedText);
+  GameSessionController({
+    required this.seedText,
+    JesterCatalog? catalog,
+    bool loadFromAsset = true,
+  }) {
+    _jesterCatalog = catalog;
+    if (catalog != null || !loadFromAsset) {
+      _catalogLoaded = true;
+      _startNewRun(seedText);
+    } else {
+      _initAsync();
+    }
   }
 
   final String seedText;
@@ -26,6 +56,23 @@ class GameSessionController extends ChangeNotifier {
     allowPair: true,
   );
   final ScoreCalculator _scoreCalculator = const ScoreCalculator();
+  JesterCatalog? _jesterCatalog;
+  bool _catalogLoaded = false;
+
+  bool get isCatalogLoaded => _catalogLoaded;
+  JesterCatalog? get jesterCatalog => _jesterCatalog;
+
+  Future<void> _initAsync() async {
+    try {
+      final jsonString = await rootBundle.loadString(_jesterAssetPath);
+      _jesterCatalog = JesterCatalog.fromJsonString(jsonString);
+    } catch (_) {
+      _jesterCatalog = null;
+    }
+    _catalogLoaded = true;
+    _startNewRun(seedText);
+    notifyListeners();
+  }
 
   late RunContext _run;
   final Set<int> _selectedIndices = <int>{};
@@ -33,11 +80,19 @@ class GameSessionController extends ChangeNotifier {
   HandSortMode _handSortMode = HandSortMode.rank;
   String? _statusMessage;
   bool _isInteractionLocked = false;
+  bool _isHandExitAnimating = false;
+  ScoreResolutionState? _scoreResolution;
+  int _displayedRoundScore = 0;
+  List<Tile> _submittedTiles = <Tile>[];
 
   RunContext get run => _run;
   List<int> get selectedIndices => _selectedIndices.toList()..sort();
   String? get statusMessage => _statusMessage;
   bool get isInteractionLocked => _isInteractionLocked;
+  bool get isHandExitAnimating => _isHandExitAnimating;
+  ScoreResolutionState? get scoreResolution => _scoreResolution;
+  int get displayedRoundScore => _displayedRoundScore;
+  List<Tile> get submittedTiles => List.unmodifiable(_submittedTiles);
 
   List<Anomaly> get anomalies => _run.player.anomalies;
   bool get isShopOpen => _run.phase == RunPhase.shop;
@@ -71,17 +126,32 @@ class GameSessionController extends ChangeNotifier {
     return _scoreCalculator.calculate(
       combo: combo,
       anomalies: _run.player.anomalies,
-      context: ScoreContext(
-        combinationsSubmittedThisAction: 1,
-        setsPlayedBefore: _run.player.setsPlayed,
-        runsPlayedBefore: _run.player.runsPlayed,
-        discardsUsedThisStage: 3 - _run.player.discardsLeft,
-      ),
+      context: _buildScoreContext(playedTiles: combo.tiles),
+    );
+  }
+
+  ScoreContext _buildScoreContext({List<Tile> playedTiles = const []}) {
+    final hand = _run.player.hand;
+    final heldHand = hand
+        .where((t) => !playedTiles.contains(t))
+        .toList();
+    return ScoreContext(
+      combinationsSubmittedThisAction: 1,
+      setsPlayedBefore: _run.player.setsPlayed,
+      runsPlayedBefore: _run.player.runsPlayed,
+      discardsUsedThisStage: 3 - _run.player.discardsLeft,
+      discardsRemaining: _run.player.discardsLeft,
+      cardsRemainingInDeck: _run.drawPile.length,
+      ownedJesterCount: _run.player.anomalies.length,
+      maxJesterSlots: maxJesterSlots,
+      playedHandSize: playedTiles.length,
+      heldHand: heldHand,
+      scoredTiles: playedTiles,
     );
   }
 
   void toggleTileSelection(int index) {
-    if (!_run.isStageActive) {
+    if (!_run.isStageActive || _isInteractionLocked) {
       return;
     }
 
@@ -100,27 +170,42 @@ class GameSessionController extends ChangeNotifier {
   }
 
   void submitSelection() {
+    if (_isInteractionLocked) {
+      return;
+    }
     if (_selectedIndices.isEmpty) {
       _statusMessage = '먼저 타일을 선택하세요.';
       notifyListeners();
       return;
     }
 
+    _isInteractionLocked = true;
+    notifyListeners();
+
     try {
+      final submittedTiles = selectedIndices
+          .map((index) => _run.player.hand[index])
+          .toList();
+      _submittedTiles = submittedTiles;
       final result = _run.submitSelection(selectedIndices);
       _selectedIndices.clear();
       _applyCurrentHandSort();
-      _statusMessage =
-          '${_comboLabel(result.combination.type)} 제출: +${result.breakdown.finalScore}';
+      final comboLabel = _comboLabel(result.combination.type);
+      _statusMessage = '$comboLabel 제출: +${result.breakdown.finalScore}';
       _appendLog(_statusMessage!);
       notifyListeners();
+      unawaited(_runSubmitResolutionSequence(result, comboLabel));
     } on StateError catch (error) {
+      _isInteractionLocked = false;
       _statusMessage = error.message;
       notifyListeners();
     }
   }
 
   void discardSelection() {
+    if (_isInteractionLocked) {
+      return;
+    }
     if (_selectedIndices.isEmpty) {
       _statusMessage = '버릴 타일을 선택하세요.';
       notifyListeners();
@@ -169,6 +254,7 @@ class GameSessionController extends ChangeNotifier {
       _selectedIndices.clear();
       _run.advanceToNextStage();
       _applyCurrentHandSort();
+      _displayedRoundScore = _run.stage?.currentScore ?? 0;
       _statusMessage = _run.isRunCompleted
           ? 'Stage ${RunContext.maxStage} 클리어. 런이 종료되었습니다.'
           : 'Stage ${_run.stage?.stageIndex} 시작';
@@ -181,6 +267,9 @@ class GameSessionController extends ChangeNotifier {
   }
 
   void sortHandByRank() {
+    if (_isInteractionLocked) {
+      return;
+    }
     _handSortMode = HandSortMode.rank;
     _selectedIndices.clear();
     _applyCurrentHandSort();
@@ -189,6 +278,9 @@ class GameSessionController extends ChangeNotifier {
   }
 
   void sortHandBySuit() {
+    if (_isInteractionLocked) {
+      return;
+    }
     _handSortMode = HandSortMode.suit;
     _selectedIndices.clear();
     _applyCurrentHandSort();
@@ -211,6 +303,98 @@ class GameSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _runSubmitResolutionSequence(
+    SubmitResult result,
+    String comboLabel,
+  ) async {
+    var shouldUnlockInFinally = true;
+    try {
+      await _runScoreResolutionSequence(result, comboLabel);
+      if (result.stageCleared) {
+        await _runStageClearSequence();
+      } else if (result.gameOver) {
+        _run.finalizeSubmitContinuation(result: result);
+        _statusMessage = '플레이를 모두 소모했습니다. 런 종료.';
+        _appendLog(_statusMessage!);
+      } else {
+        _run.finalizeSubmitContinuation(result: result);
+        _applyCurrentHandSort();
+        _statusMessage = '점수 계산 완료. 새 타일을 보충합니다.';
+        shouldUnlockInFinally = false;
+        notifyListeners();
+      }
+    } finally {
+      _scoreResolution = null;
+      _submittedTiles = <Tile>[];
+      if (shouldUnlockInFinally) {
+        _isInteractionLocked = false;
+      }
+      notifyListeners();
+    }
+  }
+
+  Future<void> _runScoreResolutionSequence(
+    SubmitResult result,
+    String comboLabel,
+  ) async {
+    final tileCount = result.combination.tiles.length;
+    final perTileDuration = Duration(
+      milliseconds: tileCount <= 1 ? 900 : (tileCount * 700),
+    );
+
+    _scoreResolution = ScoreResolutionState(
+      comboLabel: comboLabel,
+      breakdown: result.breakdown,
+      tiles: result.combination.tiles,
+      phase: ScoreResolutionPhase.chips,
+    );
+    notifyListeners();
+
+    await Future<void>.delayed(perTileDuration);
+
+    _scoreResolution = ScoreResolutionState(
+      comboLabel: comboLabel,
+      breakdown: result.breakdown,
+      tiles: result.combination.tiles,
+      phase: ScoreResolutionPhase.mult,
+    );
+    notifyListeners();
+
+    await Future<void>.delayed(perTileDuration);
+
+    _scoreResolution = ScoreResolutionState(
+      comboLabel: comboLabel,
+      breakdown: result.breakdown,
+      tiles: result.combination.tiles,
+      phase: ScoreResolutionPhase.finalScore,
+    );
+    notifyListeners();
+
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    _displayedRoundScore = _run.stage?.currentScore ?? _displayedRoundScore;
+    notifyListeners();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
+  Future<void> _runStageClearSequence() async {
+    _isInteractionLocked = true;
+    notifyListeners();
+
+    _isHandExitAnimating = true;
+    notifyListeners();
+
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+
+    try {
+      _run.finalizeClearedStageToShop();
+      _statusMessage = '스테이지 클리어. 상점으로 이동합니다.';
+      _appendLog(_statusMessage!);
+    } finally {
+      _isHandExitAnimating = false;
+      notifyListeners();
+    }
+  }
+
   String comboLabel(CombinationType? type) => _comboLabel(type);
 
   void _startNewRun(String seed) {
@@ -218,18 +402,20 @@ class GameSessionController extends ChangeNotifier {
     final rng = SeededRng.fromString(seed);
     final deck = StandardDeck.buildSingleSet();
     rng.shuffle(deck);
+    final catalog = _jesterCatalog?.shopCatalog ?? const <Anomaly>[];
     _run = RunContext(
       seedText: seed,
       rng: rng,
       drawPile: deck,
       evaluator: _evaluator,
-      anomalyCatalog: MvpAnomalyCatalog.all,
+      anomalyCatalog: catalog,
     )..startStage(1);
     _applyCurrentHandSort();
     _selectedIndices.clear();
     _logs
       ..clear()
       ..add(const RunLogEntry(message: '새 런 시작', stageIndex: 1));
+    _displayedRoundScore = _run.stage?.currentScore ?? 0;
   }
 
   void _applyCurrentHandSort() {

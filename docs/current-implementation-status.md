@@ -71,6 +71,19 @@
 - `assets/translations/data/ko/jesters.json` 한글 번역 작성
 - `docs/logic-rewrite-baseline.md`로 재작성 기준선 확정
 
+### JSON 기반 Jester 시스템 (2026-04-06 추가)
+
+- `JesterData` 모델: `jesters_common.json` 항목을 불변 객체로 파싱
+- `JesterAnomaly`: `Anomaly` 상속, JSON 데이터 기반 `applyChips/applyMult/applyXMult` 동적 계산
+- `JesterCatalog`: JSON 배열 → `List<Anomaly>` 변환. `shopCatalog`/`scoringJesters` 필터 제공
+- `JesterTranslations`: 번역 JSON(`en`/`ko`)에서 `displayName`/`effectText`/`notes` 조회
+- `GameSessionController`가 앱 시작 시 `data/common/jesters_common.json`을 비동기 로드, 상점 카탈로그로 사용
+- `ScoreContext`에 `discardsRemaining`, `cardsRemainingInDeck`, `ownedJesterCount`, `maxJesterSlots`, `playedHandSize`, `heldHand`, `scoredTiles` 필드 추가
+- `RunContext.maxJesterSlots`를 3→5로 변경
+- `ShopOffer.price`가 `JesterAnomaly`이면 `baseCost`를 사용
+- UI `_JesterSlotCard`에 `effectText` 표시 추가
+- 기존 `mvp_anomalies.dart`는 참조용으로 유지 (JSON 기반 Jester와 병행)
+
 ## 2. 문서 정의가 부족해 보류한 항목
 
 ### Gold 획득 수치
@@ -146,17 +159,17 @@
 
 ## 3. 지금 기준 다음 우선순위
 
-1. 문서 대비 현재 불일치 정리: Hands 4/5, Jester 슬롯 3/5, Ante×Blind 구조, Anomaly 잔존 의존
-2. Pure Dart 코어 로직 재설계 및 재구현
-3. Jester 카탈로그/번역 로더 연결
-4. 새 로직을 게임 화면에 최소 경로로 재연결
-5. 화면 무스크롤/연출 검증 재진입
+1. 점수 연출 마감: 카드별 팝업 위치/리듬/Jester 반응 정교화
+2. Anomaly 타입을 JSON 기반 JesterAnomaly로 완전 교체 (UI·상점 라벨 통일)
+3. 문서 대비 현재 불일치 정리: Hands 4/5, Ante×Blind 구조
+4. 첫 전투 ~ 1차 보스 수동 검증
+5. 그 다음 GameView 분해, Riverpod 전환 검토
 
 ## 4. 현재 확인된 핵심 불일치
 
-- 현재 런타임은 `Anomaly` 타입과 `mvp_anomalies.dart`를 사용하고 있어 `jesters_common.json` 기반 Jester 시스템과 다르다.
+- ~~현재 런타임은 `Anomaly` 타입과 `mvp_anomalies.dart`를 사용하고 있어 `jesters_common.json` 기반 Jester 시스템과 다르다.~~ → **해결**: `JesterAnomaly`가 `Anomaly`를 상속하여 JSON 기반 카탈로그를 상점·점수에 사용. 기존 `mvp_anomalies.dart`는 참고용으로 유지.
 - 현재 기본 Hands는 `5`이고, 재작성 기준 문서는 `4`다.
-- 현재 Jester 구매 슬롯은 `3`이고, 재작성 기준 문서는 `5`다.
+- ~~현재 Jester 구매 슬롯은 `3`이고, 재작성 기준 문서는 `5`다.~~ → **해결**: `RunContext.maxJesterSlots = 5`.
 - 현재 진행은 단순 stage 1~5 구조이며, 문서 기준인 `Small / Big / Boss` 3단 블라인드 진행이 아니다.
 - 현재 `Run Info`는 조합표 UI까지는 들어갔지만, 코드의 레벨 상승 공식은 Planet 기반 원형 규칙과 다르다.
 - 현재 제출 규칙은 “선택 타일 전체가 유효 조합이어야 함”에 가깝고, 문서 기준인 “비조합 Play 허용 / 최고 우선순위 조합만 채점 / 나머지 discard”와 다르다.

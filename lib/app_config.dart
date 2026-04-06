@@ -5,7 +5,6 @@ class AppConfig {
   static const String appTitle = 'Rummideck';
   static const String gameTitle = 'Rummi';
   static const String gameTitleSub = 'deck';
-  static const String gameSubtitle = '화면을 터치하면 플레이어가 이동합니다';
 }
 
 /// GetStorage 키 상수.

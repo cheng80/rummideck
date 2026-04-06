@@ -9,6 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  easy_localization: ^3.0.7+1
   cupertino_icons: ^1.0.8
   flame: ^1.35.1
   go_router: ^17.1.0
@@ -30,6 +34,9 @@ flutter:
     - assets/audio/music/
     - assets/fonts/
     - assets/translations/
+    - assets/translations/data/en/
+    - assets/translations/data/ko/
+    - data/common/
 
   fonts:
     - family: HUAngduIpsul140

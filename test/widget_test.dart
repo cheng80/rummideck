@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,23 @@ void main() {
         .setMockMethodCallHandler(pathProviderChannel, (call) async {
           return Directory.systemTemp.path;
         });
+
+    final jesterJson = File('data/common/jesters_common.json');
+    if (jesterJson.existsSync()) {
+      ServicesBinding.instance.defaultBinaryMessenger.setMockMessageHandler(
+        'flutter/assets',
+        (message) async {
+          final key = utf8.decode(message!.buffer.asUint8List());
+          if (key == 'data/common/jesters_common.json') {
+            return ByteData.sublistView(
+              Uint8List.fromList(utf8.encode(jesterJson.readAsStringSync())),
+            );
+          }
+          return null;
+        },
+      );
+    }
+
     await StorageHelper.init();
     GameSettings.bgmMuted = true;
     GameSettings.sfxMuted = true;
@@ -40,9 +59,11 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(const MaterialApp(home: GameView()));
+    // _initAsync calls rootBundle.loadString asynchronously
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
     await tester.pump();
 
-    expect(find.text('Small Blind'), findsOneWidget);
     expect(find.text('Play Hand'), findsOneWidget);
     expect(find.text('Discard'), findsWidgets);
     expect(find.text('Jesters'), findsOneWidget);
