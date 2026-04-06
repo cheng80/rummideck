@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 import '../anomalies/anomaly.dart';
 import '../combination/combination_evaluator.dart';
 import '../models/combination.dart';
@@ -203,7 +205,26 @@ class RunContext {
       ..generateOffers(ownedAnomalies: player.anomalies);
   }
 
-  void finalizeClearedStageToShop() {
+  /// 디버그 전용. [kDebugMode]에서만 동작. 스테이지 클리어 없이 상점을 연다.
+  /// [advanceToNextStage]가 동작하도록 현재 스테이지를 클리어 처리한다.
+  void debugOpenShop() {
+    if (!kDebugMode) {
+      return;
+    }
+    final currentStage = stage;
+    if (currentStage == null) {
+      throw StateError('No active stage');
+    }
+    if (!currentStage.isCleared) {
+      currentStage.currentScore = currentStage.targetScore;
+    }
+    phase = RunPhase.shop;
+    shop = ShopState(catalog: _anomalyCatalog, rng: rng, stage: currentStage)
+      ..generateOffers(ownedAnomalies: player.anomalies);
+  }
+
+  /// 스테이지 클리어 직후 손패만 버림. 상점은 [openShop]으로 연다.
+  void discardClearedStageHand() {
     final currentStage = stage;
     if (currentStage == null || !currentStage.isCleared) {
       throw StateError('Stage is not cleared');
@@ -212,6 +233,10 @@ class RunContext {
       _discardPile.addAll(player.hand);
       player.hand.clear();
     }
+  }
+
+  void finalizeClearedStageToShop() {
+    discardClearedStageHand();
     openShop();
   }
 
@@ -281,6 +306,24 @@ class RunContext {
 
     player.gold -= offer.price;
     currentShop.offers.removeAt(offerIndex);
+  }
+
+  /// 보유 Jester 슬롯을 판매하고 골드를 받는다. 스테이지 또는 상점에서만 가능하다.
+  void sellOwnedAnomaly(int slotIndex) {
+    if (!isStageActive && phase != RunPhase.shop) {
+      throw StateError('Jester can only be sold during stage or shop');
+    }
+    if (slotIndex < 0 || slotIndex >= player.anomalies.length) {
+      throw RangeError.index(slotIndex, player.anomalies, 'slotIndex');
+    }
+    final removed = player.anomalies.removeAt(slotIndex);
+    player.gold += _sellGoldFor(removed);
+  }
+
+  static int _sellGoldFor(Anomaly a) {
+    final p = a.rarity.price;
+    final v = p ~/ 2;
+    return v < 1 ? 1 : v;
   }
 
   Tile? _drawOne() {

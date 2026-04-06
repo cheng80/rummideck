@@ -53,4 +53,9 @@ class GameSettings {
   static set keepScreenOn(bool v) =>
       StorageHelper.write(StorageKeys.keepScreenOn, v);
 
+  /// 사용자가 설정에서 고른 언어 코드만 저장한다. 없으면 기기 로케일을 따른다.
+  static Future<void> setAppLocaleCode(String languageCode) async {
+    if (languageCode != 'ko' && languageCode != 'en') return;
+    await StorageHelper.write(StorageKeys.appLocale, languageCode);
+  }
 }

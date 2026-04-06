@@ -123,6 +123,14 @@
 - UI `_JesterSlotCard`에 `effectText` 표시 추가
 - 기존 `mvp_anomalies.dart`는 참조용으로 유지 (JSON 기반 Jester와 병행)
 
+### 세션·상점·연출 UI (2026-04 갱신)
+
+- **`GamePresentationClock`** (`lib/game/game_presentation_clock.dart`): UI 연출 전용 일시정지 플래그 + `delay(Duration)` (옵션/런 정보로 멈출 때 `Future.delayed`만 쓰지 않고 동일 규칙으로 지연). `GameSessionController`가 소유·`delayPresentationTimeline` 공개.
+- **캐시아웃 → 상점**: 스테이지 클리어 후 `CashOutPanel`로 정산 줄 순차 표시 → 버튼으로 `RunContext.openShop()` (손패는 기존 규칙대로 정리 후 상점).
+- **상점 오버레이**: 스택에서 상단 스트립 **위**에 그려 전체 테이블·HUD를 덮음. `ShopModalOverlay` + `ShopPanel`: 상단 **약 1/3**에 보유 골드·5슬롯 제스터(탭 `showJesterDetailSheet`, 롱프레스 드래그 판매 존), 하단 **약 2/3**에 오퍼 상세·리롤·다음 스테이지. 우상 작은 옵션 버튼 → 일시정지와 동일 토글.
+- **`jester_detail_sheet.dart`**: 전투 `JesterBar`와 상점이 공유하는 제스터 상세 다이얼로그.
+- **디버그 상점** (`kDebugMode`만): `game_view` 우상 `DBG·상점` → `GameSessionController.debugOpenShop()` → `RunContext.debugOpenShop()` (스테이지를 클리어 처리한 뒤 상점 오퍼 생성). 릴리스에서 코드 경로 무동작.
+
 ## 2. 문서 정의가 부족해 보류한 항목
 
 ### Gold 획득 수치

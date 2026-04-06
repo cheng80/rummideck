@@ -1,7 +1,7 @@
 # Riverpod + 모듈 분리 리팩토링 플랜
 
 > **기준일**: 2026-04-06  
-> **최종 갱신**: 2026-04-06 (Phase 1–3, 5–7 전체 완료)  
+> **최종 갱신**: 2026-04-06 (Phase 1–3, 5–7 전체 완료) · 2026-04 문서 동기화 (연출·상점·디버그)  
 > **원칙**: CURSOR.md — "작은 단위 변경", "실행 가능한 코드 유지", "UI/Logic 분리"  
 > **참조 프로젝트**: `flame_tab_order` (easy_localization), `hivetodo` (Riverpod 3 + ConsumerWidget)
 
@@ -40,7 +40,13 @@ lib/views/
                                PauseMenuOverlay(StatefulWidget), ModalScrim, GlassPanel
 lib/vm/
   game_session_provider.dart ← ChangeNotifierProvider.autoDispose<GameSessionController>
+lib/game/
+  game_presentation_clock.dart ← UI 연출 일시정지·delay (GameSessionController가 소유)
 ```
+
+게임 뷰 보조:
+
+- `lib/views/game/jester_detail_sheet.dart` — 제스터 상세 다이얼로그 (`JesterBar` / 상점 공통)
 
 ---
 
@@ -200,3 +206,4 @@ util/    → 유틸리티
 | 2026-04-06 | 반응형 레이아웃: FittedBox 기반 iPad/iPhone 동일 비율 스케일링 구현 |
 | 2026-04-06 | 배경 처리: SafeArea 밖 black, SafeArea 안 여백 AppColors.tableGreen3 |
 | 2026-04-06 | Phase 6~7 전체 완료 — 모든 리팩토링 단계 마감 |
+| 2026-04 | `GamePresentationClock`, 캐시아웃·상점 UI(1/3·2/3), `jester_detail_sheet`, `debugOpenShop` / `DBG·상점` — `START_HERE`, `current-implementation-status`, `PLAN_CHECKLIST`, `40_shop_system` 문서 반영 |

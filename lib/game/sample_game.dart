@@ -3,7 +3,6 @@ import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../resources/sound_manager.dart';
 import 'components/game_hud.dart';
 import 'components/player.dart';
 import 'components/space_bg.dart';
@@ -37,6 +36,9 @@ class SampleGame extends FlameGame with TapCallbacks, KeyboardEvents {
   final Set<LogicalKeyboardKey> _keysPressed = {};
   /// 키보드 이동 속도 (px/s)
   static const double _keyMoveSpeed = 280;
+
+  /// 런 정보 오버레이를 위해 엔진만 멈춘 경우(옵션 일시정지와 별개)
+  bool _pausedEngineForRunInfo = false;
 
   Vector2 _initialPlayerPosition() => Vector2(
     (safeAreaLeft - safeAreaRight) / 2 + Player.radius,
@@ -133,20 +135,40 @@ class SampleGame extends FlameGame with TapCallbacks, KeyboardEvents {
     }
   }
 
-  /// 게임 일시정지
-  void pauseGame() {
-    if (!isPlaying) return;
+  /// 옵션·런 정보 공통: Flame 엔진과 샘플 플레이 루프만 정지한다. 이미 멈춘 경우 false.
+  bool _tryPauseGameplayLoop() {
+    if (!isPlaying) return false;
     isPlaying = false;
     _keysPressed.clear();
-    SoundManager.pauseBgm();
     pauseEngine();
+    return true;
+  }
+
+  /// 게임 일시정지 (옵션 메뉴). BGM은 그대로 둔다.
+  void pauseGame() {
+    if (!_tryPauseGameplayLoop()) return;
     onPauseStateChanged?.call(true);
   }
 
   /// 게임 재개
   void resumeGame() {
+    _pausedEngineForRunInfo = false;
     resumeEngine();
     isPlaying = true;
     onPauseStateChanged?.call(false);
+  }
+
+  /// 런 정보 패널: 엔진 정지는 옵션과 동일, 일시정지 UI 콜백만 없음.
+  void pauseForRunInfo() {
+    if (!_tryPauseGameplayLoop()) return;
+    _pausedEngineForRunInfo = true;
+  }
+
+  /// 런 정보를 닫을 때 — 옵션 일시정지 중이 아니면 여기서만 재개한다.
+  void resumeAfterRunInfo() {
+    if (!_pausedEngineForRunInfo) return;
+    _pausedEngineForRunInfo = false;
+    resumeEngine();
+    isPlaying = true;
   }
 }

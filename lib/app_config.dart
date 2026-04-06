@@ -16,6 +16,9 @@ class StorageKeys {
   static const String bgmMuted = 'bgm_muted';
   static const String sfxMuted = 'sfx_muted';
   static const String keepScreenOn = 'keep_screen_on';
+
+  /// 앱 표시 언어 (`ko` | `en`). 미저장 시 기기 로케일에 따름.
+  static const String appLocale = 'app_locale';
 }
 
 class RoutePaths {

@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
+import 'resources/jester_translation_scope.dart';
 import 'resources/sound_manager.dart';
 import 'services/game_settings.dart';
+import 'utils/locale_resolver.dart';
 import 'utils/storage_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await EasyLocalization.ensureInitialized();
   await StorageHelper.init();
+  await EasyLocalization.ensureInitialized();
+  final startLocale = resolveStartupLocale();
   await SoundManager.preload();
   _applyKeepScreenOn();
   runApp(
@@ -23,8 +26,11 @@ void main() async {
         ],
         path: 'assets/translations',
         fallbackLocale: const Locale('ko'),
-        saveLocale: true,
-        child: const App(),
+        startLocale: startLocale,
+        saveLocale: false,
+        child: const JesterTranslationScope(
+          child: App(),
+        ),
       ),
     ),
   );

@@ -1,4 +1,5 @@
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,10 +9,10 @@ import '../resources/sound_manager.dart';
 import '../vm/game_session_provider.dart';
 import 'game/battle_bottom_bar.dart';
 import 'game/battle_center.dart';
+import 'game/battle_theme.dart';
 import 'game/battle_top_strip.dart';
 import 'game/game_common.dart';
 import 'game/game_modals.dart';
-import 'game/battle_theme.dart';
 import 'game/hand_zone.dart';
 import 'game/jester_bar.dart';
 
@@ -26,6 +27,32 @@ class _GameViewState extends ConsumerState<GameView> {
   SampleGame? _game;
   bool _isPaused = false;
   bool _showRunInfo = false;
+
+  static const double _framePadding = 12;
+
+  void _toggleOptions() {
+    final g = _game;
+    if (g == null) return;
+    if (_isPaused) {
+      g.resumeGame();
+    } else {
+      g.pauseGame();
+    }
+  }
+
+  void _openRunInfo() {
+    _game?.pauseForRunInfo();
+    setState(() => _showRunInfo = true);
+    ref.read(gameSessionProvider).setUiTimelinePaused(true);
+  }
+
+  void _closeRunInfo() {
+    setState(() => _showRunInfo = false);
+    ref.read(gameSessionProvider).setUiTimelinePaused(_isPaused);
+    if (!_isPaused) {
+      _game?.resumeAfterRunInfo();
+    }
+  }
 
   @override
   void initState() {
@@ -42,11 +69,9 @@ class _GameViewState extends ConsumerState<GameView> {
       safeAreaLeft: 0,
       safeAreaRight: 0,
       onPauseStateChanged: (paused) {
-        if (mounted) {
-          setState(() {
-            _isPaused = paused;
-          });
-        }
+        if (!mounted) return;
+        setState(() => _isPaused = paused);
+        ref.read(gameSessionProvider).setUiTimelinePaused(paused || _showRunInfo);
       },
     );
   }
@@ -88,71 +113,130 @@ class _GameViewState extends ConsumerState<GameView> {
               );
             }
 
+            final stage = controller.run.stage;
+            final topBand = BattleSpacing.topBandHeightCompact;
+
+            final freezeLayerTickers = _isPaused || _showRunInfo;
+
             Widget gameStack = Stack(
-                        children: [
-                          Positioned.fill(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                BattleSpacing.frameRadius,
-                              ),
-                              child: BattleTableScene(
-                                game: _game!,
-                                onRunInfo: () {
-                                  setState(() {
-                                    _showRunInfo = true;
-                                  });
-                                },
+              children: [
+                TickerMode(
+                  enabled: !freezeLayerTickers,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            BattleSpacing.frameRadius,
+                          ),
+                          child: BattleTableScene(
+                            game: _game!,
+                            showTopStrip: false,
+                            onRunInfo: _openRunInfo,
+                          ),
+                        ),
+                      ),
+                      if (controller.isRunCompleted)
+                        const Positioned.fill(
+                          child: ModalScrim(child: RunCompletePanel()),
+                        ),
+                      if (controller.isGameOver)
+                        const Positioned.fill(
+                          child: ModalScrim(child: GameOverPanel()),
+                        ),
+                      if (controller.isInteractionLocked &&
+                          !controller.isShopOpen &&
+                          !controller.isRunCompleted &&
+                          !controller.isGameOver)
+                        const Positioned.fill(
+                          child: AbsorbPointer(
+                            absorbing: true,
+                            child: ColoredBox(
+                              color: AppColors.debugLockTint,
+                            ),
+                          ),
+                        ),
+                      if (controller.isCashOutPending)
+                        const Positioned.fill(
+                          child: CashOutPanel(),
+                        ),
+                      if (stage != null)
+                        Positioned(
+                          left: _framePadding,
+                          right: _framePadding,
+                          top: _framePadding,
+                          height: topBand,
+                          child: CompactTopStrip(
+                            onPause: _toggleOptions,
+                            onRunInfo: _openRunInfo,
+                          ),
+                        ),
+                      if (kDebugMode &&
+                          stage != null &&
+                          controller.isCatalogLoaded &&
+                          !controller.isShopOpen &&
+                          !controller.isCashOutPending &&
+                          !controller.isRunCompleted &&
+                          !controller.isGameOver)
+                        Positioned(
+                          top: _framePadding + topBand + 6,
+                          right: _framePadding + 4,
+                          child: Material(
+                            color: Colors.black.withValues(alpha: 0.42),
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: () => ref
+                                  .read(gameSessionProvider)
+                                  .debugOpenShop(),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 5,
+                                ),
+                                child: Text(
+                                  'DBG·상점',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.amberAccent.shade200,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          if (controller.isShopOpen)
-                            const Positioned.fill(
-                              child: ModalScrim(child: ShopPanel()),
+                        ),
+                      if (controller.isShopOpen)
+                        Positioned.fill(
+                          child: ShopModalOverlay(
+                            topInset: 0,
+                            child: ShopPanel(
+                              onOpenOptions: _toggleOptions,
                             ),
-                          if (controller.isRunCompleted)
-                            const Positioned.fill(
-                              child: ModalScrim(child: RunCompletePanel()),
-                            ),
-                          if (controller.isGameOver)
-                            const Positioned.fill(
-                              child: ModalScrim(child: GameOverPanel()),
-                            ),
-                          if (_isPaused)
-                            Positioned.fill(
-                              child: ModalScrim(
-                                child: PauseMenuOverlay(
-                                  game: _game!,
-                                  seedText: controller.run.seedText,
-                                ),
-                              ),
-                            ),
-                          if (_showRunInfo)
-                            Positioned.fill(
-                              child: ModalScrim(
-                                child: RunInfoPanel(
-                                  onClose: () {
-                                    setState(() {
-                                      _showRunInfo = false;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                          if (controller.isInteractionLocked &&
-                              !_showRunInfo &&
-                              !controller.isShopOpen &&
-                              !controller.isRunCompleted &&
-                              !controller.isGameOver &&
-                              !_isPaused)
-                            const Positioned.fill(
-                              child: AbsorbPointer(
-                                absorbing: true,
-                                child: ColoredBox(
-                                  color: AppColors.debugLockTint,
-                                ),
-                              ),
-                            ),
-                        ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (_isPaused)
+                  Positioned.fill(
+                    child: ModalScrim(
+                      child: PauseMenuOverlay(
+                        game: _game!,
+                        seedText: controller.run.seedText,
+                      ),
+                    ),
+                  ),
+                if (_showRunInfo)
+                  Positioned.fill(
+                    child: ModalScrim(
+                      child: RunInfoPanel(
+                        onClose: _closeRunInfo,
+                      ),
+                    ),
+                  ),
+              ],
             );
 
             if (needsScale) {
@@ -191,10 +275,12 @@ class BattleTableScene extends StatelessWidget {
     super.key,
     required this.game,
     required this.onRunInfo,
+    this.showTopStrip = true,
   });
 
   final SampleGame game;
   final VoidCallback onRunInfo;
+  final bool showTopStrip;
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +311,7 @@ class BattleTableScene extends StatelessWidget {
             child: CompactBattleLayout(
               game: game,
               onRunInfo: onRunInfo,
+              showTopStrip: showTopStrip,
             ),
           ),
         ),
@@ -238,10 +325,12 @@ class CompactBattleLayout extends StatelessWidget {
     super.key,
     required this.game,
     required this.onRunInfo,
+    this.showTopStrip = true,
   });
 
   final SampleGame game;
   final VoidCallback onRunInfo;
+  final bool showTopStrip;
 
   @override
   Widget build(BuildContext context) {
@@ -253,10 +342,12 @@ class CompactBattleLayout extends StatelessWidget {
       children: [
         SizedBox(
           height: topBandHeight,
-          child: CompactTopStrip(
-            onPause: game.pauseGame,
-            onRunInfo: onRunInfo,
-          ),
+          child: showTopStrip
+              ? CompactTopStrip(
+                  onPause: game.pauseGame,
+                  onRunInfo: onRunInfo,
+                )
+              : const SizedBox.shrink(),
         ),
         const SizedBox(height: 6),
         const StageStatusStrip(),

@@ -58,6 +58,42 @@ class _SettingViewState extends State<SettingView> {
       ),
       body: ListView(
         children: [
+          _SectionTitle(title: context.tr('sectionLanguage')),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: context.locale.languageCode,
+              items: [
+                DropdownMenuItem(
+                  value: 'ko',
+                  child: Text(
+                    context.tr('localeKorean'),
+                    style: const TextStyle(
+                      fontFamily: AssetPaths.fontAngduIpsul140,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text(
+                    context.tr('localeEnglish'),
+                    style: const TextStyle(
+                      fontFamily: AssetPaths.fontAngduIpsul140,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+              onChanged: (code) async {
+                if (code == null) return;
+                await context.setLocale(Locale(code));
+                await GameSettings.setAppLocaleCode(code);
+                if (context.mounted) setState(() {});
+              },
+            ),
+          ),
           _SectionTitle(title: context.tr('sectionScreen')),
           _MuteSwitch(
             label: context.tr('keepScreenOn'),

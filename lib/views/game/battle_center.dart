@@ -138,7 +138,7 @@ class BattleCenterPanel extends ConsumerWidget {
   }
 }
 
-class PlayedTilesStage extends StatefulWidget {
+class PlayedTilesStage extends ConsumerStatefulWidget {
   const PlayedTilesStage({
     super.key,
     required this.tiles,
@@ -149,10 +149,10 @@ class PlayedTilesStage extends StatefulWidget {
   final ScoreResolutionState? resolution;
 
   @override
-  State<PlayedTilesStage> createState() => _PlayedTilesStageState();
+  ConsumerState<PlayedTilesStage> createState() => _PlayedTilesStageState();
 }
 
-class _PlayedTilesStageState extends State<PlayedTilesStage> {
+class _PlayedTilesStageState extends ConsumerState<PlayedTilesStage> {
   Timer? _timer;
   int _activeIndex = 0;
 
@@ -201,6 +201,9 @@ class _PlayedTilesStageState extends State<PlayedTilesStage> {
     _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
       if (!mounted) {
         timer.cancel();
+        return;
+      }
+      if (ref.read(gameSessionProvider).uiTimelinePaused) {
         return;
       }
       final next = _activeIndex + 1;

@@ -13,6 +13,7 @@ import '../logic/run/run_log_entry.dart';
 import '../logic/run/run_context.dart';
 import '../logic/score/score_calculator.dart';
 import '../logic/score/score_context.dart';
+import 'game_presentation_clock.dart';
 
 enum HandSortMode { rank, suit }
 
@@ -30,6 +31,27 @@ class ScoreResolutionState {
   final ScoreBreakdown breakdown;
   final List<Tile> tiles;
   final ScoreResolutionPhase phase;
+}
+
+/// 스테이지 클리어 직후 정산 패널에 표시할 골드 내역(이미 [RunContext] 규칙으로 지급됨).
+class CashOutBreakdown {
+  const CashOutBreakdown({
+    required this.targetScore,
+    required this.stageIndex,
+    required this.blindReward,
+    required this.remainingHands,
+    required this.perHandBonus,
+    required this.handsGold,
+    required this.totalGold,
+  });
+
+  final int targetScore;
+  final int stageIndex;
+  final int blindReward;
+  final int remainingHands;
+  final int perHandBonus;
+  final int handsGold;
+  final int totalGold;
 }
 
 class GameSessionController extends ChangeNotifier {
@@ -84,6 +106,10 @@ class GameSessionController extends ChangeNotifier {
   ScoreResolutionState? _scoreResolution;
   int _displayedRoundScore = 0;
   List<Tile> _submittedTiles = <Tile>[];
+  CashOutBreakdown? _cashOutBreakdown;
+
+  /// UI 연출 타임플래그·지연(옵션/런 정보 일시정지 등).
+  final GamePresentationClock _presentationClock = GamePresentationClock();
 
   RunContext get run => _run;
   List<int> get selectedIndices => _selectedIndices.toList()..sort();
@@ -96,6 +122,20 @@ class GameSessionController extends ChangeNotifier {
 
   List<Anomaly> get anomalies => _run.player.anomalies;
   bool get isShopOpen => _run.phase == RunPhase.shop;
+  CashOutBreakdown? get cashOutBreakdown => _cashOutBreakdown;
+  bool get isCashOutPending => _cashOutBreakdown != null;
+
+  bool get uiTimelinePaused => _presentationClock.isPaused;
+
+  void setUiTimelinePaused(bool value) {
+    if (_presentationClock.setPaused(value)) {
+      notifyListeners();
+    }
+  }
+
+  /// [GamePresentationClock.delay] — 위젯에서도 동일 규칙으로 연출 지연할 때 사용.
+  Future<void> delayPresentationTimeline(Duration target) =>
+      _presentationClock.delay(target);
   bool get isRunCompleted => _run.phase == RunPhase.completed;
   bool get isGameOver => _run.phase == RunPhase.gameOver;
   List<RunLogEntry> get logs => List.unmodifiable(_logs.reversed);
@@ -249,6 +289,57 @@ class GameSessionController extends ChangeNotifier {
     }
   }
 
+  /// 디버그 빌드에서만 상점 UI를 바로 연다.
+  void debugOpenShop() {
+    if (!kDebugMode) {
+      return;
+    }
+    try {
+      _run.debugOpenShop();
+      _cashOutBreakdown = null;
+      _isInteractionLocked = false;
+      _scoreResolution = null;
+      _statusMessage = '상점 (디버그)';
+      _appendLog('디버그: 상점 열기');
+      notifyListeners();
+    } on StateError catch (error) {
+      _statusMessage = error.message;
+      notifyListeners();
+    }
+  }
+
+  void confirmCashOutEnterShop() {
+    if (_cashOutBreakdown == null) {
+      return;
+    }
+    try {
+      _run.openShop();
+      _cashOutBreakdown = null;
+      _statusMessage = '상점';
+      _appendLog('상점으로 이동했습니다.');
+      _isInteractionLocked = false;
+      notifyListeners();
+    } on StateError catch (error) {
+      _statusMessage = error.message;
+      notifyListeners();
+    }
+  }
+
+  void sellJester(int slotIndex) {
+    if (_isInteractionLocked && _run.phase != RunPhase.shop) {
+      return;
+    }
+    try {
+      _run.sellOwnedAnomaly(slotIndex);
+      _statusMessage = 'Jester를 판매했습니다.';
+      _appendLog(_statusMessage!);
+      notifyListeners();
+    } on StateError catch (error) {
+      _statusMessage = error.message;
+      notifyListeners();
+    }
+  }
+
   void advanceToNextStage() {
     try {
       _selectedIndices.clear();
@@ -311,6 +402,7 @@ class GameSessionController extends ChangeNotifier {
     try {
       await _runScoreResolutionSequence(result, comboLabel);
       if (result.stageCleared) {
+        shouldUnlockInFinally = false;
         await _runStageClearSequence();
       } else if (result.gameOver) {
         _run.finalizeSubmitContinuation(result: result);
@@ -349,7 +441,7 @@ class GameSessionController extends ChangeNotifier {
     );
     notifyListeners();
 
-    await Future<void>.delayed(perTileDuration);
+    await _presentationClock.delay(perTileDuration);
 
     _scoreResolution = ScoreResolutionState(
       comboLabel: comboLabel,
@@ -359,7 +451,7 @@ class GameSessionController extends ChangeNotifier {
     );
     notifyListeners();
 
-    await Future<void>.delayed(perTileDuration);
+    await _presentationClock.delay(perTileDuration);
 
     _scoreResolution = ScoreResolutionState(
       comboLabel: comboLabel,
@@ -369,10 +461,10 @@ class GameSessionController extends ChangeNotifier {
     );
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await _presentationClock.delay(const Duration(milliseconds: 900));
     _displayedRoundScore = _run.stage?.currentScore ?? _displayedRoundScore;
     notifyListeners();
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await _presentationClock.delay(const Duration(milliseconds: 300));
   }
 
   Future<void> _runStageClearSequence() async {
@@ -382,12 +474,26 @@ class GameSessionController extends ChangeNotifier {
     _isHandExitAnimating = true;
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 420));
+    await _presentationClock.delay(const Duration(milliseconds: 420));
 
     try {
-      _run.finalizeClearedStageToShop();
-      _statusMessage = '스테이지 클리어. 상점으로 이동합니다.';
-      _appendLog(_statusMessage!);
+      _run.discardClearedStageHand();
+      final s = _run.stage!;
+      final plays = _run.player.playsLeft;
+      final blind = RunContext.stageClearGoldBase;
+      final per = RunContext.remainingPlayGoldBonus;
+      final handsGold = plays * per;
+      _cashOutBreakdown = CashOutBreakdown(
+        targetScore: s.targetScore,
+        stageIndex: s.stageIndex,
+        blindReward: blind,
+        remainingHands: plays,
+        perHandBonus: per,
+        handsGold: handsGold,
+        totalGold: blind + handsGold,
+      );
+      _statusMessage = '정산을 확인하세요.';
+      _appendLog('스테이지 클리어. 정산 후 상점으로 이동합니다.');
     } finally {
       _isHandExitAnimating = false;
       notifyListeners();
@@ -415,6 +521,8 @@ class GameSessionController extends ChangeNotifier {
       ..clear()
       ..add(const RunLogEntry(message: '새 런 시작', stageIndex: 1));
     _displayedRoundScore = _run.stage?.currentScore ?? 0;
+    _cashOutBreakdown = null;
+    _presentationClock.reset();
   }
 
   void _applyCurrentHandSort() {
