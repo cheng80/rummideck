@@ -13,7 +13,7 @@ void main() {
         stage: StageState(stageIndex: 1, targetScore: 100, currentScore: 40),
       );
 
-      shop.generateOffers(ownedAnomalies: const []);
+      shop.generateOffers(ownedAnomalies: const [], playerGold: 100);
 
       expect(shop.offers.length, lessThanOrEqualTo(3));
       expect(
@@ -29,12 +29,30 @@ void main() {
         stage: StageState(stageIndex: 1, targetScore: 100, currentScore: 40),
       );
 
-      shop.generateOffers(ownedAnomalies: const [TripleBoostAnomaly()]);
+      shop.generateOffers(
+        ownedAnomalies: const [TripleBoostAnomaly()],
+        playerGold: 100,
+      );
 
       expect(
         shop.offers.any((offer) => offer.anomaly.id == 'triple_boost'),
         isFalse,
       );
+    });
+
+    test('골드 이하 가격의 Jester만 오퍼 후보가 된다', () {
+      final shop = ShopState(
+        catalog: MvpAnomalyCatalog.all,
+        rng: SeededRng(4),
+        stage: StageState(stageIndex: 1, targetScore: 100, currentScore: 40),
+      );
+
+      shop.generateOffers(ownedAnomalies: const [], playerGold: 5);
+
+      expect(shop.offers, isNotEmpty);
+      for (final o in shop.offers) {
+        expect(o.price, lessThanOrEqualTo(5));
+      }
     });
 
     test('리롤 비용은 5에서 시작하고 리롤마다 1씩 증가한다', () {
@@ -47,8 +65,8 @@ void main() {
       expect(shop.canAffordReroll(4), isFalse);
       expect(shop.canAffordReroll(5), isTrue);
 
-      shop.generateOffers(ownedAnomalies: const []);
-      shop.reroll(gold: 5, ownedAnomalies: const []);
+      shop.generateOffers(ownedAnomalies: const [], playerGold: 100);
+      shop.reroll(gold: 5, playerGold: 95, ownedAnomalies: const []);
 
       expect(shop.currentRerollCost, 6);
       expect(shop.canAffordReroll(5), isFalse);

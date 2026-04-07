@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +31,8 @@ class TitleView extends ConsumerStatefulWidget {
 }
 
 class _TitleViewState extends ConsumerState<TitleView> {
-  String _selectedSeed = _seedOptions.first;
+  String? _selectedSeed;
+  bool _playbookDebugStart = false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,15 +81,32 @@ class _TitleViewState extends ConsumerState<TitleView> {
                     selected: _selectedSeed,
                     onChanged: (seed) => setState(() => _selectedSeed = seed),
                   ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 16),
+                    _PlaybookDebugCheckbox(
+                      value: _playbookDebugStart,
+                      onChanged: (v) =>
+                          setState(() => _playbookDebugStart = v ?? false),
+                    ),
+                  ],
                   const SizedBox(height: 24),
-                  _RoundButton(
-                    label: context.tr('startGame'),
-                    color: AppColors.titleBlue,
-                    onPressed: () {
-                      SoundManager.playSfx(AssetPaths.sfxBtnSnd);
-                      ref.read(selectedSeedProvider.notifier).state = _selectedSeed;
-                      context.go(RoutePaths.game);
-                    },
+                  Opacity(
+                    opacity: _selectedSeed == null ? 0.4 : 1,
+                    child: _RoundButton(
+                      label: context.tr('startGame'),
+                      color: AppColors.titleBlue,
+                      onPressed: () {
+                        final seed = _selectedSeed;
+                        if (seed == null) {
+                          return;
+                        }
+                        SoundManager.playSfx(AssetPaths.sfxBtnSnd);
+                        ref.read(selectedSeedProvider.notifier).state = seed;
+                        ref.read(playbookDebugStartProvider.notifier).state =
+                            kDebugMode && _playbookDebugStart;
+                        context.go(RoutePaths.game);
+                      },
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _RoundButton(
@@ -112,7 +131,7 @@ class _TitleViewState extends ConsumerState<TitleView> {
 class _SeedSelector extends StatelessWidget {
   const _SeedSelector({required this.selected, required this.onChanged});
 
-  final String selected;
+  final String? selected;
   final ValueChanged<String> onChanged;
 
   @override
@@ -128,6 +147,14 @@ class _SeedSelector extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selected,
+          hint: Text(
+            '시드 선택',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           isExpanded: true,
           dropdownColor: AppColors.titleDropdown,
           icon: const Icon(Icons.expand_more, color: Colors.white70),
@@ -150,6 +177,52 @@ class _SeedSelector extends StatelessWidget {
             }
           },
         ),
+      ),
+    );
+  }
+}
+
+class _PlaybookDebugCheckbox extends StatelessWidget {
+  const _PlaybookDebugCheckbox({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 280,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Checkbox(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppColors.titleBlue,
+              checkColor: Colors.white,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                '플레이북(그리디) 상태로 시작 → 스테이지 2 전투',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

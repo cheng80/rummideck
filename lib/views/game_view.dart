@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../debug/playbook_clearable_runner.dart';
 import '../game/sample_game.dart';
 import '../resources/asset_paths.dart';
 import '../resources/sound_manager.dart';
@@ -79,6 +80,22 @@ class _GameViewState extends ConsumerState<GameView> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(gameSessionProvider);
+
+    ref.listen(gameSessionProvider, (previous, next) {
+      if (!kDebugMode) {
+        return;
+      }
+      if (!next.isCatalogLoaded) {
+        return;
+      }
+      if (!ref.read(playbookDebugStartProvider)) {
+        return;
+      }
+      ref.read(playbookDebugStartProvider.notifier).state = false;
+      next.debugBootstrapPlaybookToStage(
+        PlaybookClearableRunner.kDefaultEnterStageIndex,
+      );
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -179,7 +196,7 @@ class _GameViewState extends ConsumerState<GameView> {
                           !controller.isRunCompleted &&
                           !controller.isGameOver)
                         Positioned(
-                          top: _framePadding + topBand + 6,
+                          top: _framePadding + topBand + 26,
                           right: _framePadding + 4,
                           child: Material(
                             color: Colors.black.withValues(alpha: 0.42),

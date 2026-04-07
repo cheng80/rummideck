@@ -202,7 +202,10 @@ class RunContext {
 
     phase = RunPhase.shop;
     shop = ShopState(catalog: _anomalyCatalog, rng: rng, stage: currentStage)
-      ..generateOffers(ownedAnomalies: player.anomalies);
+      ..generateOffers(
+        ownedAnomalies: player.anomalies,
+        playerGold: player.gold,
+      );
   }
 
   /// 디버그 전용. [kDebugMode]에서만 동작. 스테이지 클리어 없이 상점을 연다.
@@ -220,7 +223,10 @@ class RunContext {
     }
     phase = RunPhase.shop;
     shop = ShopState(catalog: _anomalyCatalog, rng: rng, stage: currentStage)
-      ..generateOffers(ownedAnomalies: player.anomalies);
+      ..generateOffers(
+        ownedAnomalies: player.anomalies,
+        playerGold: player.gold,
+      );
   }
 
   /// 스테이지 클리어 직후 손패만 버림. 상점은 [openShop]으로 연다.
@@ -266,10 +272,12 @@ class RunContext {
       throw StateError('Not enough gold to reroll');
     }
 
+    final goldBeforeReroll = player.gold;
     final rerollCost = currentShop.currentRerollCost;
     player.gold -= rerollCost;
     currentShop.reroll(
-      gold: player.gold + rerollCost,
+      gold: goldBeforeReroll,
+      playerGold: player.gold,
       ownedAnomalies: player.anomalies,
     );
   }
@@ -373,6 +381,8 @@ class RunContext {
     }
   }
 
+  /// 스테이지 클리어 직후 지급: [stageClearGoldBase] + (클리어 직후 남은 Plays × [remainingPlayGoldBonus]).
+  /// 한 스테이지당 이론상 최소는 클리어 직후 `playsLeft == 0`일 때 [stageClearGoldBase]만(플레이 보너스 0).
   void _awardStageClearGold() {
     player.gold +=
         stageClearGoldBase + (player.playsLeft * remainingPlayGoldBonus);

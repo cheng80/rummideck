@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:async';
 
+import '../debug/playbook_clearable_runner.dart';
 import '../logic/anomalies/anomaly.dart';
 import '../logic/combination/combination_evaluator.dart';
 import '../logic/deck/standard_deck.dart';
@@ -384,6 +385,50 @@ class GameSessionController extends ChangeNotifier {
     _statusMessage = '새 런을 시작했습니다.';
     _appendLog(_statusMessage!);
     notifyListeners();
+  }
+
+  /// 디버그 전용. [PlaybookClearableRunner](BFS 최소 행동 + 최저가 상점)로 스테이지·상점을 진행한 뒤
+  /// [enterStageIndex] 전투 시작 상태(손패·골드·제스터)로 맞춘다. (기본: 스테이지 2)
+  void debugBootstrapPlaybookToStage(int enterStageIndex) {
+    if (!kDebugMode) {
+      return;
+    }
+    final catalog = _jesterCatalog?.shopCatalog;
+    if (catalog == null || catalog.isEmpty) {
+      _statusMessage = '제스터 카탈로그 없음';
+      notifyListeners();
+      return;
+    }
+    try {
+      _run = PlaybookClearableRunner.runToStageStart(
+        seedText: seedText,
+        shopCatalog: catalog,
+        enterStageIndex: enterStageIndex,
+      );
+      _handSortMode = HandSortMode.rank;
+      _applyCurrentHandSort();
+      _selectedIndices.clear();
+      _isInteractionLocked = false;
+      _isHandExitAnimating = false;
+      _scoreResolution = null;
+      _submittedTiles = <Tile>[];
+      _logs
+        ..clear()
+        ..add(
+          RunLogEntry(
+            message: '플레이북 디버그: Stage $enterStageIndex 전투 시작',
+            stageIndex: _run.stage?.stageIndex ?? 0,
+          ),
+        );
+      _displayedRoundScore = _run.stage?.currentScore ?? 0;
+      _cashOutBreakdown = null;
+      _presentationClock.reset();
+      _statusMessage = '플레이북 디버그 진입 (Stage $enterStageIndex)';
+      notifyListeners();
+    } on PlaybookSimulationException catch (e) {
+      _statusMessage = '플레이북 시뮬 실패: ${e.message}';
+      notifyListeners();
+    }
   }
 
   void setInteractionLocked(bool locked) {
