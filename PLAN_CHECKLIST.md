@@ -1,9 +1,9 @@
 # 개발 플랜 체크리스트
 
 > **이 파일이 실행 단위 진행표다.** 완료 시 `- [ ]`를 `- [x]`로 바꾼다.  
-> 재점검 기준일: **2026-04-06** (코드·문서 기준 스냅샷; 상점·연출·디버그 문서 2026-04 동기화)  
+> 재점검 기준일: **2026-04-09** (코드·문서 동기화; 플레이북·상점 골드 필터 커밋 반영)  
 > **계획 수정 (2026)**: 순수 로직만으로는 재미(게임성) 검증이 어렵다고 판단, **한 번의 완전한 순회**(첫 전투~1차 보스)와 **필수 피드백·연출**을 검증 목표에 포함한다. (아래 §0 참고)
-> **전략 수정 (2026-04-05)**: 현재 게임 로직은 부분 수정이 아니라, **문서 기준으로 처음부터 다시 짠다**는 전제로 재정렬한다. 기존 구현은 참고용이며, 아래 §0.5 재작성 플랜을 현재 우선 기준으로 본다.
+> **전략 수정 (2026-04-05)**: 장기적으로는 **문서 기준 Pure Dart 로직 재작성**(§0.5)이 맞지만, **당장 손대는 일**은 아래 **「현재 다음 작업」**과 §0·§5.1 **게임성 검증**(연출·순회)이다. §0.5는 별 트랙으로 착수 시점을 정한다.
 
 ---
 
@@ -19,6 +19,7 @@
 | 시드 UI·표시 | **디버그 드롭다운 구현** (정식 입력 UI 미완) |
 | 문서 기준 진행 (Ante/Blind 3단 등) | **미완** |
 | Balatro급 족보/문서·코드 완전 정합 | 검토·추가 작업 필요 |
+| 플레이북·상점 정책 (시드 시뮬·골드 필터) | **부분 완료** — `PlaybookClearableRunner` BFS·`ShopState` 골드 기준 오퍼·`docs/seed_playbook_output.txt` (2026-04-08) |
 
 상세 근거: `docs/current-implementation-status.md`
 
@@ -45,9 +46,10 @@
 - [ ] **첫 전투 ~ 1차 보스** 구간을 **Jester 의존 없이** 클리어 가능한 난이도·룰로 통과 가능
 - [ ] 아래 **§5.1 연출** 항목이 체크된 뒤, 이 절의 “**한 번의 완전한 순회** 완료”를 **함께** 판정
 
-### 0.5 로직 재작성 플랜 (현재 최우선)
+### 0.5 로직 재작성 플랜 (장기·별 트랙)
 
-> 목표: 현재 구현을 부분 보수하지 않고, **문서 기준 단일 규칙 흐름**으로 Pure Dart 게임 로직을 다시 세운다.
+> 목표: 현재 구현을 부분 보수하지 않고, **문서 기준 단일 규칙 흐름**으로 Pure Dart 게임 로직을 다시 세운다.  
+> **단기 우선순위와의 관계**: 아래 미체크 항목은 **재작성 스프린트 착수 시**의 로드맵이다. 당장은 §0·§5.1·「현재 다음 작업」을 진행한다.
 
 - [x] **재작성 기준선 문서 확정**: 현재 우선 문서(`10`, `20`, `21`, `30`, `40`, `50`)에서 실제 구현 대상으로 쓸 규칙만 다시 잠근다 (`docs/logic-rewrite-baseline.md`)
 - [ ] **도메인 모델 재설계**: Tile / Hand / Blind / Ante / Shop / Jester / RunState 경계를 다시 정의한다
@@ -55,8 +57,8 @@
 - [ ] **점수 파이프라인 재작성**: Base Chips / Number Bonus / Mult / XMult / Jester 트리거 순서를 이벤트 기반으로 다시 세운다
   선택 타일 중 실제 조합 타일만 점수 계산하고, 남는 타일은 discard 처리하는 규칙 포함
 - [ ] **진행 구조 재작성**: Ante × Blind(Small/Big/Boss), 스킵, 보상, Boss 제약을 `RunContext`와 분리 가능한 구조로 다시 설계한다
-- [ ] **상점/Jester 런타임 재작성**: `jesters_common.json` 기반 카탈로그 로더, 구매/리롤/슬롯/희귀도 규칙을 다시 연결한다
-- [ ] **번역 데이터 로딩 연결**: `assets/translations/data/en|ko/jesters.json`를 `displayName/effectText/notes` fallback 구조로 읽는다
+- [ ] **상점/Jester 런타임 재작성**: `jesters_common.json` 기반 카탈로그 로더, 구매/리롤/슬롯/희귀도 규칙을 다시 연결한다 (현행은 이미 JSON·상점 연동됨 → 재작성 시 경계 재정의)
+- [x] **번역 데이터 로딩 (현행 빌드)**: `assets/translations/data/en|ko/jesters.json` + `JesterTranslationScope` / 로케일 리졸버 (2026-04 로케일·상점 대규모 갱신과 동시에 연결). 재작성 후에는 새 도메인에 맞게 재점검
 - [ ] **기존 구현 폐기 범위 확정**: 재사용할 파일과 버릴 파일을 목록화하고, 임시 호환 계층 필요 여부를 결정한다
 - [ ] **재작성 테스트 기준선 구축**: evaluator / score / progression / shop / localization 단위 테스트를 새 기준으로 다시 세운다
 - [ ] **UI 재연결 최소 경로 확보**: 새 로직으로 게임 화면이 다시 뜨는 최소 세션(start stage, select, submit, shop open)을 우선 복구한다
@@ -79,9 +81,9 @@
 - [x] Flutter + Flame 프로젝트 구성
 - [x] 라우팅 (타이틀 / 게임 / 설정)
 - [x] BGM·SFX·화면 꺼짐 방지 등 기본 설정
-- [ ] **시드 입력 UI** (런 시작 전 문자열 입력·검증)
+- [ ] **시드 입력 UI** (런 시작 전 **임의 문자열** 입력·검증 — 현재는 타이틀에서 프리셋 목록만 선택)
 - [ ] **시드 표시** (HUD 또는 설정에서 현재 시드·복사)
-- [ ] **고정 시드 제거**: `GameView`의 임시 `'MVP-001'` 고정값을 없애고, 랜덤 기본 시드 또는 사용자 입력 시드로 런 시작
+- [ ] **기본 시드 정책**: `selectedSeedProvider` 기본값 `'MVP-001'` 및 타이틀 프리셋 외 **랜덤 기본·자유 입력**과 정리 (게임 진입은 타이틀에서 시드 선택 후)
 
 ---
 
@@ -120,7 +122,7 @@
 - [x] MVP용 변칙 데이터 (`mvp_anomalies` 등)
 - [x] Jester 데이터 번역 파일 준비 (`assets/translations/data/en|ko/jesters.json`)
 - [x] **`data/common/jesters_common.json` ↔ 게임 로직 연동** (카탈로그·`22_jester_catalog.md` 기준)
-- [ ] **임시 `Anomaly` 기반 UI/상점/런타임 제거 후 JSON 기반 Jester 시스템으로 교체**
+- [ ] **레거시 전용 경로 정리**: 상점·점수는 이미 `jesters_common.json`·`JesterAnomaly` 우선 — `mvp_anomalies` 등 **참조용·중복 카탈로그 의존 제거** 및 용어 정리 (`Anomaly` → Jester 중심 명세는 §0.6과 연동)
 - [x] **Jester 번역 키 로더 연결** (`displayNameKey` / `effectTextKey` / `notesKey`)
 - [x] **Jester 슬롯 5개 런타임 반영** (기본 4 + 확장 1 표현 포함)
 - [ ] 에디션·스티커·희귀도 상점 확률 (`21`·`40`) 정밀 구현  
@@ -160,6 +162,7 @@
 - [x] `combination_evaluator_test` / `score_calculator_test` / `seeded_rng_test`
 - [x] `run_context_test` / `shop_state_test` / `stage_target_calculator_test`
 - [x] `game_session_controller_test`
+- [x] `seed_playbook_test` + `docs/seed_playbook_output.txt` (시드별 플레이북 BFS·상점 정책 회귀 참고)
 - [ ] 위젯/골든 테스트 (게임 화면 핵심 경로)
 - [ ] 점수 연출 타이밍/표시 상태에 대한 위젯 테스트 추가
 - [ ] `70_playtest.md` 기준 수동 런 로그 10~20회 (**연출 포함 빌드** 기준으로 갱신)
@@ -168,7 +171,7 @@
 
 ## 7. 문서 · 데이터 정합
 
-- [x] `docs/current-implementation-status.md`와 본 체크리스트 동기화 (2026-04: 연출·상점·디버그 반영)
+- [x] `docs/current-implementation-status.md`와 본 체크리스트 동기화 (2026-04: 연출·상점·디버그·플레이북 반영)
 - [x] Gold·Pair 정책 문서 확정 및 현재 코드 반영 상태 동기화
 - [x] Jester 로컬라이징용 데이터 파일 분리 (`en` 원문 / `ko` 번역 템플릿+실데이터)
 - [ ] 덱 구성(단일 52 vs 멀티) 문서 확정

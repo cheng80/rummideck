@@ -1,4 +1,3 @@
-import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,14 +7,12 @@ import '../game/sample_game.dart';
 import '../resources/asset_paths.dart';
 import '../resources/sound_manager.dart';
 import '../vm/game_session_provider.dart';
-import 'game/battle_bottom_bar.dart';
-import 'game/battle_center.dart';
 import 'game/battle_theme.dart';
 import 'game/battle_top_strip.dart';
-import 'game/game_common.dart';
 import 'game/game_modals.dart';
-import 'game/hand_zone.dart';
-import 'game/jester_bar.dart';
+import 'game/widgets/battle_scene.dart';
+import 'game/widgets/modal_scrim.dart';
+import 'game/widgets/shop_modal_overlay.dart';
 
 class GameView extends ConsumerStatefulWidget {
   const GameView({super.key});
@@ -287,102 +284,3 @@ class _GameViewState extends ConsumerState<GameView> {
   }
 }
 
-class BattleTableScene extends StatelessWidget {
-  const BattleTableScene({
-    super.key,
-    required this.game,
-    required this.onRunInfo,
-    this.showTopStrip = true,
-  });
-
-  final SampleGame game;
-  final VoidCallback onRunInfo;
-  final bool showTopStrip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(child: GameWidget<SampleGame>(game: game)),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.tableGreen1.withValues(alpha: 0.92),
-                  AppColors.tableGreen2.withValues(alpha: 0.88),
-                  AppColors.tableGreen3.withValues(alpha: 0.95),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned.fill(child: CustomPaint(painter: TablePatternPainter())),
-        Positioned.fill(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: CompactBattleLayout(
-              game: game,
-              onRunInfo: onRunInfo,
-              showTopStrip: showTopStrip,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class CompactBattleLayout extends StatelessWidget {
-  const CompactBattleLayout({
-    super.key,
-    required this.game,
-    required this.onRunInfo,
-    this.showTopStrip = true,
-  });
-
-  final SampleGame game;
-  final VoidCallback onRunInfo;
-  final bool showTopStrip;
-
-  @override
-  Widget build(BuildContext context) {
-    const topBandHeight = BattleSpacing.topBandHeightCompact;
-    const handHeight = BattleSpacing.handHeightCompact;
-    const actionHeight = BattleSpacing.actionHeightCompact;
-
-    return Column(
-      children: [
-        SizedBox(
-          height: topBandHeight,
-          child: showTopStrip
-              ? CompactTopStrip(
-                  onPause: game.pauseGame,
-                  onRunInfo: onRunInfo,
-                )
-              : const SizedBox.shrink(),
-        ),
-        const SizedBox(height: 6),
-        const StageStatusStrip(),
-        const SizedBox(height: 6),
-        const JesterBar(),
-        const SizedBox(height: 6),
-        const Expanded(child: BattleCenterPanel()),
-        const SizedBox(height: 6),
-        SizedBox(
-          height: handHeight,
-          child: const FanHandZone(),
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          height: actionHeight,
-          child: const BottomBattleBar(),
-        ),
-      ],
-    );
-  }
-}

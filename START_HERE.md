@@ -19,17 +19,21 @@
 | 2 | [`PLAN_CHECKLIST.md`](PLAN_CHECKLIST.md) | 체크 안 된 항목 중 **다음에 할 일** 확정 |
 | 3 | [`docs/current-implementation-status.md`](docs/current-implementation-status.md) | 구현/보류 스냅샷이 체크리스트와 맞는지 |
 | 4 | [`docs/Rumikub_Game/01_plans.md`](docs/Rumikub_Game/01_plans.md) | 방향 요약·게임성 검증 목표 상기 |
+| (선택) | [`docs/refactoring.md`](docs/refactoring.md) | UI 리팩토링 완료 요약·아카이브 — 구조 작업 시만 |
 
 작업 내용이 **룰·수치·Jester**에 닿으면 `docs/Rumikub_Game/` 아래 문서를 **필요한 만큼만** 연다. 우선순위는 설계 요약 [`00_rummikub_balatro_minimal_and_detailed_design.md`](docs/Rumikub_Game/00_rummikub_balatro_minimal_and_detailed_design.md)의 문서 맵 표를 따른다.
 
+**우선순위 관계 (한 줄)**: **단기**는 `PLAN_CHECKLIST`의 §0·§5.1·「현재 다음 작업」(연출·순회 검증). **장기**는 같은 파일 §0.5 로직 재작성 — 착수 시점은 체크리스트와 별도 합의로 잡고, 문서·커밋과 어긋나지 않게 유지한다.
+
 현재 아키텍처 상태:
-- **Riverpod 리팩토링 완료** (2026-04-06): `game_view.dart`를 7개 독립 파일로 분리, 모든 게임 위젯을 `ConsumerWidget`/`ConsumerStatefulWidget`으로 전환. controller prop 전달 완전 제거. 상세: `docs/refactoring-plan.md`
+- **Riverpod 리팩토링 완료** (2026-04-06): `game_view.dart`를 7개 독립 파일로 분리, 모든 게임 위젯을 `ConsumerWidget`/`ConsumerStatefulWidget`으로 전환. controller prop 전달 완전 제거. 요약·아카이브 링크: [`docs/refactoring.md`](docs/refactoring.md)
 - **UI 코드 품질 개선 완료** (2026-04-06): `AppColors` 71색상 중앙 집중, `SubPanelSurface` 공통 위젯, build 메서드 분리, 타입 안전화, 미사용 필드/파라미터 제거
 - **iPad/iPhone 반응형 레이아웃 완료** (2026-04-06): `FittedBox` 스케일링으로 동일 비율 렌더링. iPhone은 화면 전체 사용, iPad는 기준 해상도(402×778) 스케일링
 - **UI 연출 타임라인** (2026-04): `lib/game/game_presentation_clock.dart`의 `GamePresentationClock` — 옵션/런 정보 등으로 게임 연출만 멈출 때 플래그와 `delay()`를 한곳에서 관리. `GameSessionController.delayPresentationTimeline` 위임.
 - **스테이지 클리어 → 상점**: 캐시아웃 정산 패널(`CashOutPanel`) 연출 후 상점 진입. 정산 UI는 화면 중앙·고정 슬롯에 줄 순차 표시.
 - **상점 UI** (2026-04): 상단 HUD 위에 전체 덮개, 본문은 **상단 약 1/3** 보유 골드·제스터 슬롯(탭 상세 / 롱프레스 드래그 판매), **하단 약 2/3** 구매 목록·리롤·다음 스테이지. 우측 상단 작은 옵션(일시정지) 버튼. 제스터 상세는 `jester_detail_sheet.dart` 공통.
 - **디버그** (`kDebugMode`만): 전투 화면 우상단 `DBG·상점`으로 상점 UI 즉시 호출 (`RunContext.debugOpenShop` — 테스트용 스테이지 클리어 처리 포함). 릴리스 빌드에서는 미표시·무동작.
+- **플레이북·상점 정책** (2026-04-08): `PlaybookClearableRunner`(BFS 큐)·시드 기반 클리어 가능성 검사; `ShopState`가 보유 골드 미만 오퍼 제외·시드별 슬롯 노출. 회귀 참고 `test/seed_playbook_test.dart`, `docs/seed_playbook_output.txt`.
 - 드로우 애니메이션 중에는 최상단 투명 입력 차단 레이어가 동작한다. 제출/점수/클리어 연출도 같은 락 구조를 쓰고 있다.
 - `Play Hand` 후 흐름은 `제출 -> 점수 연출 -> 최종 점수 반영 -> (리필 또는 캐시아웃/상점/게임오버)` 순서.
 - 점수 연출은 **제출된 실제 중앙 타일 스냅샷** 위에 하이라이트 박스와 숫자 팝업을 얹는 구조.

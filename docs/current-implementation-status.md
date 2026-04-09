@@ -3,7 +3,8 @@
 > **세션 시작**: [`START_HERE.md`](../START_HERE.md) → [`PLAN_CHECKLIST.md`](../PLAN_CHECKLIST.md) 순으로 본다.  
 > **실행 단위 진행표**: `PLAN_CHECKLIST.md`에서 체크박스로 관리한다. 본 문서는 상태 스냅샷·보류 사유용이다.  
 > **게임성 검증 (2026)**: 로직만으로는 재미 검증이 어렵다고 보아, 첫 전투~1차 보스까지 **한 번의 완전한 순회**와 **딜·드로우·리필·점수 연출**(`PLAN_CHECKLIST.md` §0·§5.1)을 우선 과제로 둔다.
-> **재작성 기준 (2026-04-05)**: 현재 게임 로직은 부분 수정 대신 **문서 기준 재작성 대상으로 간주**한다. 아래 완료 항목은 참고용 자산이며, 새 구현의 정답 소스로 보지 않는다.
+> **재작성 기준 (2026-04-05)**: 현재 게임 로직은 부분 수정 대신 **문서 기준 재작성 대상으로 간주**한다. 아래 완료 항목은 참고용 자산이며, 새 구현의 정답 소스로 보지 않는다.  
+> **우선순위**: 당장 과제는 `PLAN_CHECKLIST.md` §0·§5.1·「현재 다음 작업」; 재작성(§0.5)은 별 트랙.
 
 ## 목적
 
@@ -61,7 +62,7 @@
 - `flutter_riverpod` 도입: `ChangeNotifierProvider.autoDispose`로 `GameSessionController` 관리
 - `lib/vm/game_session_provider.dart`에 Provider 2개 정의 (`gameSessionProvider`, `selectedSeedProvider`)
 - 모든 게임 위젯을 `ConsumerWidget`/`ConsumerStatefulWidget`으로 전환, controller prop 전달 완전 제거
-- 상세 리팩토링 계획/이력: `docs/refactoring-plan.md`
+- 리팩토링 요약·아카이브: [`docs/refactoring.md`](refactoring.md)
 
 ### UI 코드 품질 개선 (2026-04-06 완료)
 
@@ -130,6 +131,13 @@
 - **상점 오버레이**: 스택에서 상단 스트립 **위**에 그려 전체 테이블·HUD를 덮음. `ShopModalOverlay` + `ShopPanel`: 상단 **약 1/3**에 보유 골드·5슬롯 제스터(탭 `showJesterDetailSheet`, 롱프레스 드래그 판매 존), 하단 **약 2/3**에 오퍼 상세·리롤·다음 스테이지. 우상 작은 옵션 버튼 → 일시정지와 동일 토글.
 - **`jester_detail_sheet.dart`**: 전투 `JesterBar`와 상점이 공유하는 제스터 상세 다이얼로그.
 - **디버그 상점** (`kDebugMode`만): `game_view` 우상 `DBG·상점` → `GameSessionController.debugOpenShop()` → `RunContext.debugOpenShop()` (스테이지를 클리어 처리한 뒤 상점 오퍼 생성). 릴리스에서 코드 경로 무동작.
+
+### 플레이북·상점 정책 (2026-04-08)
+
+- **`PlaybookClearableRunner`** (`lib/debug/playbook_clearable_runner.dart`): 시드 고정 런에 대해 BFS 스타일 액션 시퀀스로 스테이지 클리어 가능성 검사; 큐 기반으로 시뮬 정지 완화.
+- **`ShopState`**: 보유 골드로 살 수 있는 오퍼만 노출(부족 시 최저가 대역 등 정책)·시드에 따른 2~3 슬롯 노출; `RunContext` 상점 생성/리롤에 골드 전달.
+- **테스트·산출물**: `test/seed_playbook_test.dart`, `docs/seed_playbook_output.txt`(다중 시드 플레이북 로그).
+- **타이틀**: 디버그 시 플레이북 모드로 스테이지 진입 옵션(`playbookDebugStartProvider` 등) 연동.
 
 ## 2. 문서 정의가 부족해 보류한 항목
 

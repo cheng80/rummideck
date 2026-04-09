@@ -1,5 +1,6 @@
 # Riverpod + 모듈 분리 리팩토링 플랜
 
+> **보관**: 완료 스냅샷. 진행 안내·선택 과제 요약은 [`docs/refactoring.md`](../../refactoring.md).  
 > **기준일**: 2026-04-06  
 > **최종 갱신**: 2026-04-06 (Phase 1–3, 5–7 전체 완료) · 2026-04 문서 동기화 (연출·상점·디버그)  
 > **원칙**: CURSOR.md — "작은 단위 변경", "실행 가능한 코드 유지", "UI/Logic 분리"  
@@ -32,12 +33,17 @@ lib/views/
   game/
     game_common.dart        ← StageStatusStrip(ConsumerWidget), 공통 위젯(StatusBadge, RailPanel 등), compactNumber()
     battle_top_strip.dart   ← CompactTopStrip(ConsumerWidget), CompactMetaPanel(ConsumerWidget), BlindHeaderCard 등
-    jester_bar.dart         ← JesterBar(ConsumerWidget), JesterSlotCard
+    jester_bar.dart         ← JesterBar(ConsumerWidget); JesterSlotCard는 widgets/jester_slot_card
     battle_center.dart      ← BattleCenterPanel(ConsumerWidget), PlayedTilesStage/Overlay, LogTape, BreakdownBadge 등
-    hand_zone.dart          ← FanHandZone(ConsumerStatefulWidget), BattleTileCard, HandRow, DrawFlightCard 등
+    hand_zone.dart          ← FanHandZone(ConsumerStatefulWidget), HandRow, DrawFlightCard 등
     battle_bottom_bar.dart  ← BottomBattleBar(ConsumerWidget)
     game_modals.dart        ← ShopPanel, RunInfoPanel, GameOverPanel, RunCompletePanel(ConsumerWidget),
-                               PauseMenuOverlay(StatefulWidget), ModalScrim, GlassPanel
+                               PauseMenuOverlay(StatefulWidget) 등 (GlassPanel/ModalScrim은 widgets/로 분리)
+    widgets/
+      battle_tile_card.dart  ← BattleTileCard
+      jester_slot_card.dart  ← JesterSlotCard
+      glass_panel.dart       ← GlassPanel
+      modal_scrim.dart       ← ModalScrim
 lib/vm/
   game_session_provider.dart ← ChangeNotifierProvider.autoDispose<GameSessionController>
 lib/game/
@@ -47,6 +53,7 @@ lib/game/
 게임 뷰 보조:
 
 - `lib/views/game/jester_detail_sheet.dart` — 제스터 상세 다이얼로그 (`JesterBar` / 상점 공통)
+- `ui_widget_extraction_plan.md`(동일 폴더) — 모달·전투·손패 위젯 순차 분리 플랜(Phase 1~)
 
 ---
 
@@ -207,3 +214,4 @@ util/    → 유틸리티
 | 2026-04-06 | 배경 처리: SafeArea 밖 black, SafeArea 안 여백 AppColors.tableGreen3 |
 | 2026-04-06 | Phase 6~7 전체 완료 — 모든 리팩토링 단계 마감 |
 | 2026-04 | `GamePresentationClock`, 캐시아웃·상점 UI(1/3·2/3), `jester_detail_sheet`, `debugOpenShop` / `DBG·상점` — `START_HERE`, `current-implementation-status`, `PLAN_CHECKLIST`, `40_shop_system` 문서 반영 |
+| 2026-04-09 | 완료 플랜 본 파일을 `docs/archive/refactoring/`로 보관; 진입점 `docs/refactoring.md` — `CURSOR.md`, `START_HERE.md`, `current-implementation-status.md` 링크 갱신 |

@@ -25,12 +25,14 @@
 8. `docs/Rumikub_Game/70_playtest.md`
 9. `docs/Rumikub_Game/80_mvp_checklist.md`
 10. `docs/code-flow-analysis.md`
+11. `docs/refactoring.md` (UI·Riverpod 리팩토링 완료 요약·아카이브; 규칙 충돌 시 위 1–10 우선)
 
 설명:
 
 - 게임 규칙과 점수 규칙이 가장 우선이다
 - 아키텍처는 규칙을 구현하는 구조 기준이다
 - `code-flow-analysis.md`는 앱 골격 유지 기준이다
+- `refactoring.md`는 이력·구조 참고용이며 설계 문서와 충돌하지 않게 읽는다
 
 ## 2. 구현 진행 순서
 

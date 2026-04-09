@@ -1,37 +1,54 @@
 # AGENTS.md
 
 ## 목적
-Codex가 일관된 방식으로 코드/문서를 생성하도록 규칙 정의
+Codex·에이전트가 일관되게 코드/문서를 생성하도록 규칙을 정의한다.  
+**공통 규약은 `CURSOR.md`와 동일**하며, 여기서는 에이전트 관점만 보강한다.
 
 ## 역할
-- 코드 생성
-- 문서 정리
-- 테스트 코드 작성
+- 코드 생성  
+- 문서 정리 (아래 문서화 정책 준수)  
+- 테스트 코드 작성  
 
 ## 프롬프트 구조
-- Goal
-- Context
-- Constraints
-- Done when
+작업 설계 시 다음을 채운다.
+- **Goal**  
+- **Context**  
+- **Constraints**  
+- **Done when**  
+
+## 워크플로 (CURSOR.md와 공통)
+1. **계획 먼저** — 구현 전 접근 방식·질문.  
+2. **작게 분해** — 다중 파일 변경은 단계별.  
+3. **영향 분석** — 깨질 수 있는 지점 + 테스트 제안/실행.  
+4. **버그** — 재현 테스트 우선.  
+5. **규칙 갱신** — 반복 실수는 `CURSOR.md` / 본 파일에 반영 요청 시 수정.  
 
 ## 참조 순서
-1. GAME_RULES.md
-2. SCORE_SYSTEM.md
-3. ANOMALY_SYSTEM.md
-4. PROGRESSION.md
-5. ARCHITECTURE.md
-6. CONTENT_RULES.md
+1. GAME_RULES.md  
+2. SCORE_SYSTEM.md  
+3. ANOMALY_SYSTEM.md  
+4. PROGRESSION.md  
+5. ARCHITECTURE.md  
+6. CONTENT_RULES.md  
 
 ## 규칙
-- Flutter + Flame
-- Seed RNG 필수
-- UI/Logic 분리
-- 점수 순서 고정
+- Flutter + Flame  
+- Seed RNG 필수 (`Random()` ❌)  
+- UI / Logic 분리  
+- 점수·조합 규칙 임의 변경 ❌  
+- **간결함·가독성** — 요구 범위 내, 읽기 쉬운 코드.  
+- **UI 모듈화**, **핵심 한글 주석**, **Row/Column `spacing` 우선** — 상세는 `CURSOR.md`.  
+- **응답 언어**: 한국어 기본.  
+
+## 문서화 정책 (CURSOR.md와 공통)
+- 참조 순서상 **게임 설계 문서**는 절대 무시하지 않는다.  
+- 사용자가 **문서 작성을 요청하지 않은 경우**, 불필요한 신규 `.md`를 만들지 않는다.  
+- 기존 `docs/` 합의 문서 갱신은 프로젝트 관행에 따른다.  
 
 ## 금지
-- Random() ❌
-- 점수 변경 ❌
-- 문서 무시 ❌
+- `Random()` ❌  
+- 점수 변경 ❌  
+- 참조 문서 무시 ❌  
 
 ## 한 줄
 문서를 기반으로 코드 생성하는 엔진
